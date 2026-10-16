@@ -36,7 +36,7 @@
   let lenis = null;
   if (!COARSE && window.Lenis) {
     // Lenis 1.3 сам вимикає згладжування при системному «зменшити рух» — сайт це налаштування не враховує (BRIEF, №7)
-    lenis = new Lenis({lerp: 0.1, respectReducedMotion: false});
+    lenis = new Lenis({lerp: 0.05, respectReducedMotion: false}); // 0.05 — як на produx.design: 95 % шляху за ~1 с
     lenis.on('scroll', ScrollTrigger.update);
     gsap.ticker.add(t => lenis.raf(t * 1000));
     gsap.ticker.lagSmoothing(0);
