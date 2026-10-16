@@ -146,11 +146,12 @@
   if (grow) {
     const N = +grow.dataset.grow, step = innerWidth < 768 ? 2 : 1;   // на телефоні кожен другий кадр — удвічі менше ваги
     const cv = $('canvas', grow), ctx = cv.getContext('2d'), tags = $$('.tags li', grow);
-    const frames = new Array(N), want = {i: 0};
-    // тло за прокруткою: темний ґрунт, поки земля гола → глибокий зелений, коли сад виріс
-    const STOPS = [[0, [27, 22, 16]], [0.3, [24, 30, 22]], [0.7, [14, 38, 30]], [1, [9, 40, 34]]];
+    let frames = new Array(N), seq = 'island';
+    const want = {i: 0};
+    // тло за прокруткою: свої кольори в кожної концепції (ґрунт, камінь, креслення → зелень саду)
+    let STOPS = [[0, [27, 22, 16]], [0.3, [24, 30, 22]], [0.7, [14, 38, 30]], [1, [9, 40, 34]]];
     const bgAt = p => { let k = 1; while (k < STOPS.length - 1 && p > STOPS[k][0]) k++; const [p0, c0] = STOPS[k - 1], [p1, c1] = STOPS[k], t = Math.min(1, Math.max(0, (p - p0) / (p1 - p0))); return `rgb(${c0.map((v, n) => Math.round(v + (c1[n] - v) * t)).join(' ')})`; };
-    const src = i => `img/island/island_${String(i + 1).padStart(4, '0')}.webp`;
+    const src = i => `img/island/${seq}_${String(i + 1).padStart(4, '0')}.webp`;
     const draw = () => {
       let i = want.i - (want.i % step);
       while (i > 0 && !frames[i]?.complete) i -= step;          // поки потрібний кадр не прийшов — найближчий готовий
@@ -174,6 +175,47 @@
       draw();
     }});
     addEventListener('resize', draw);
+
+    // прототип: вибір концепції розділу (кадри, заголовок, виноски, кольори тла)
+    const CONCEPTS = {
+      island: {name: 'А «Острівець»', note: 'Шматок землі в повітрі обертається, на ньому з голої землі виростає сад — як камінь на produx.design.', title: 'Сад росте на очах',
+        tags: [[14, 'Газон за день', 'svc-gazon'], [34, 'Доріжки й плитка', 'svc-blagoustrij'], [52, 'Самшит і туї з власних розсадників', 'svc-ozelenennya'], [78, 'Дерева-крупноміри', 'case-svitlo-park']],
+        stops: [[0, [27, 22, 16]], [0.3, [24, 30, 22]], [0.7, [14, 38, 30]], [1, [9, 40, 34]]]},
+      section: {name: 'Б «Розкладка шарів»', note: 'Основа саду шарами: щебінь, пісок, геотекстиль, ґрунт із трубами автополиву розходяться в повітрі й складаються, зверху росте газон і рослини.', title: 'Що під газоном',
+        tags: [[8, 'Дренаж: щебінь, пісок, геотекстиль', 'svc-blagoustrij'], [24, 'Ґрунт і труби автополиву', 'svc-polyv'], [74, 'Рулонний газон', 'svc-gazon'], [88, 'Форсунки поливу й рослини', 'svc-ozelenennya']],
+        stops: [[0, [30, 30, 28]], [0.45, [36, 30, 22]], [0.75, [16, 36, 28]], [1, [9, 40, 34]]]},
+      plan: {name: 'В «Від креслення до саду»', note: 'Камера над кресленням ділянки; креслення тане, камера нахиляється, і сад виростає точно за планом.', title: 'Від креслення до саду',
+        tags: [[4, 'Ландшафтний проєкт', 'svc-dyzajn'], [40, '3D-візуалізація', 'hero-b-aerial'], [56, 'Реалізація своїми бригадами', 'svc-blagoustrij'], [86, 'Догляд за садом', 'svc-gazon']],
+        stops: [[0, [28, 38, 40]], [0.35, [30, 32, 26]], [0.7, [16, 36, 28]], [1, [9, 40, 34]]]},
+      yard: {name: 'Г «Двір до і після»', note: 'Двір біля будинку: купи ґрунту й піддони зникають, з’являються тераса, газон, кулі самшиту, живопліт із туї й дерево.', title: 'Двір до і після',
+        tags: [[10, 'Підготовка основи', 'svc-orenda'], [20, 'Тераса й доріжки з плитки', 'svc-blagoustrij'], [40, 'Рулонний газон', 'svc-gazon'], [56, 'Живопліт із туї й озеленення', 'svc-ozelenennya']],
+        stops: [[0, [34, 30, 26]], [0.4, [28, 30, 24]], [1, [12, 36, 30]]]},
+    };
+    const IDEAS = 'Ще дві ідеї без анімації: Д «Політ крізь сад» — камера пролітає готовим об’єктом (сцена Світлопарку в Unreal уже є); Е «Одне дерево» — саджанець виростає в крупномір.';
+    const setConcept = key => {
+      const c = CONCEPTS[key]; if (!c) return;
+      seq = key; STOPS = c.stops; frames = new Array(N);
+      const h = $('#grow-t'); h.removeAttribute('data-reveal'); h.textContent = c.title;
+      $('.intro .mono', grow).textContent = c.name;
+      tags.forEach((li, n) => { li.dataset.from = c.tags[n][0]; $('span', li).innerHTML = `<b class="mono">0${n + 1}</b> ${c.tags[n][1]}`; $('i', li).style.setProperty('--img', `url(img/${c.tags[n][2]}.webp)`); });
+      $('.poster', grow).src = `img/island/${key}_0120.webp`;
+      if (started) load();
+      ScrollTrigger.refresh(); draw();
+    };
+    const box = document.createElement('div'); box.className = 'concepts';
+    box.innerHTML = `<label for="concept"><span class="mono">Концепція розділу нижче</span><select id="concept">${Object.entries(CONCEPTS).map(([k, c]) => `<option value="${k}">${c.name}</option>`).join('')}</select></label>
+      <p class="note"></p><p class="ideas">${IDEAS}</p><button type="button" class="btn ghost">Скопіювати для Claude</button><output class="mono" aria-live="polite"></output>`;
+    grow.before(box);
+    const sel = $('select', box), note = $('.note', box);
+    const sync = () => { note.textContent = CONCEPTS[sel.value].note; };
+    sel.addEventListener('change', () => { setConcept(sel.value); sync(); });
+    $('button', box).addEventListener('click', async () => {
+      const text = `Green Garth+, розділ «Від землі до саду»: обираю концепцію ${CONCEPTS[sel.value].name}.`;
+      let ok = false; try { await navigator.clipboard.writeText(text); ok = true; } catch (e) {
+        const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); try { ok = document.execCommand('copy'); } catch (e2) {} ta.remove(); }
+      $('output', box).textContent = ok ? 'Скопійовано' : text;
+    });
+    sync();
   }
 
   // ---------- 8.6 сюжет «від неба до саду» ----------
