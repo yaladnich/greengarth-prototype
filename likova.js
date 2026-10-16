@@ -35,7 +35,8 @@
   // ---------- 8.1 плавний скрол (лише колесо миші) ----------
   let lenis = null;
   if (!COARSE && window.Lenis) {
-    lenis = new Lenis({lerp: 0.1});
+    // Lenis 1.3 сам вимикає згладжування при системному «зменшити рух» — сайт це налаштування не враховує (BRIEF, №7)
+    lenis = new Lenis({lerp: 0.1, respectReducedMotion: false});
     lenis.on('scroll', ScrollTrigger.update);
     gsap.ticker.add(t => lenis.raf(t * 1000));
     gsap.ticker.lagSmoothing(0);
