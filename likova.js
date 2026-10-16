@@ -141,6 +141,62 @@
     document.addEventListener('pointerleave', () => { px = -1; sync(); });
   }
 
+  // ---------- «Від проєкту до реального»: креслення → фото за картою росту (WebGL) ----------
+  const proj = $('[data-project]');
+  if (proj) {
+    const cv = $('canvas', proj), gl = cv.getContext('webgl', {antialias: false, premultipliedAlpha: false});
+    if (gl) {
+      const m = innerWidth < 768 ? '-m' : '';
+      const VS = 'attribute vec2 a; varying vec2 v; void main() { v = vec2(a.x * .5 + .5, .5 - a.y * .5); gl_Position = vec4(a, 0., 1.); }';
+      // a — частка, що вже проросла фото; на фронті росту легке зелене світіння
+      const FS = `precision mediump float; varying vec2 v; uniform sampler2D P, F, T; uniform float p, zoom; uniform vec4 cover;
+        void main() { vec2 uv = ((v - .5) / zoom + .5) * cover.xy + cover.zw;
+          float t = texture2D(T, uv).r, a = smoothstep(t - .035, t, p), rim = smoothstep(t - .07, t - .02, p) * (1. - a);
+          vec3 c = mix(texture2D(P, uv).rgb, texture2D(F, uv).rgb, a) + rim * vec3(.42, .78, .36) * .45;
+          gl_FragColor = vec4(c, 1.); }`;
+      const sh = (type, src) => { const o = gl.createShader(type); gl.shaderSource(o, src); gl.compileShader(o); return o; };
+      const prog = gl.createProgram(); gl.attachShader(prog, sh(gl.VERTEX_SHADER, VS)); gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, FS)); gl.linkProgram(prog); gl.useProgram(prog);
+      gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer()); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+      const al = gl.getAttribLocation(prog, 'a'); gl.enableVertexAttribArray(al); gl.vertexAttribPointer(al, 2, gl.FLOAT, false, 0, 0);
+      const U = n => gl.getUniformLocation(prog, n);
+      let ready = 0, iw = 1, ih = 1, state = {p: 0, zoom: 1.08};
+      const tex = (unit, url, name) => new Promise(res => {
+        const im = new Image(); im.decoding = 'async'; im.src = url;
+        im.onload = () => { gl.activeTexture(gl.TEXTURE0 + unit); gl.bindTexture(gl.TEXTURE_2D, gl.createTexture());
+          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, im);
+          [gl.TEXTURE_WRAP_S, gl.TEXTURE_WRAP_T].forEach(k => gl.texParameteri(gl.TEXTURE_2D, k, gl.CLAMP_TO_EDGE));
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+          gl.uniform1i(U(name), unit); if (name === 'F') { iw = im.naturalWidth; ih = im.naturalHeight; } res(); };
+        im.onerror = res;
+      });
+      const draw = () => {
+        if (ready < 3) return;
+        const r = cv.getBoundingClientRect(), dpr = Math.min(2, devicePixelRatio || 1), w = Math.round(r.width * dpr), h = Math.round(r.height * dpr);
+        if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
+        // object-fit: cover — частина картинки, що вміщається в екран
+        const ca = w / h, ia = iw / ih, sx = ca > ia ? 1 : ca / ia, sy = ca > ia ? ia / ca : 1;
+        gl.viewport(0, 0, w, h);
+        gl.uniform4f(U('cover'), sx, sy, (1 - sx) / 2, (1 - sy) / 2); gl.uniform1f(U('p'), state.p); gl.uniform1f(U('zoom'), state.zoom);
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      };
+      let started = false;
+      const start = () => { if (started) return; started = true;
+        Promise.all([tex(0, `img/svitlo/plan${m}.webp`, 'P'), tex(1, `img/svitlo/photo${m}.webp`, 'F'), tex(2, `img/svitlo/grow${m}.png`, 'T')]).then(() => { ready = 3; proj.classList.add('on'); ScrollTrigger.refresh(); draw(); }); };
+      const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) { io.disconnect(); start(); } }, {rootMargin: '150% 0px'});
+      io.observe(proj);
+      addEventListener('load', () => setTimeout(start, 2500), {once: true});
+      const steps = $$('.stages li', proj), fin = $('.final', proj);
+      ScrollTrigger.create({trigger: proj, start: 'top top', end: 'bottom bottom', onUpdate: self => {
+        state.p = Math.min(1.04, Math.max(0, (self.progress - 0.04) / 0.86));
+        state.zoom = 1.08 - 0.08 * self.progress;
+        steps.forEach(li => li.classList.toggle('on', state.p >= +li.dataset.at));
+        fin.classList.toggle('in', state.p >= 1);
+        draw();
+      }});
+      addEventListener('resize', draw);
+    }
+  }
+
   // ---------- «Від землі до саду»: кадри острівця на canvas, кадр = прогрес прокрутки розділу ----------
   const grow = $('[data-grow]');
   if (grow) {

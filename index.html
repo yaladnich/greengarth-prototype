@@ -350,6 +350,35 @@ section.grow { --grow-bg: #1b1610; background: var(--grow-bg); color: #EAF3EC; }
 .concepts .ideas { color: #9DB5A6; font-size: var(--fs-sm); }
 .concepts .btn { min-height: 48px; }
 .concepts output:empty { display: none; }
+
+/* ---------- «Від проєкту до реального»: дендроплан Світлопарку проростає фото з дрона (WebGL, карта росту) ---------- */
+section.proj { background: #0E1410; color: #EAF3EC; }
+.proj .stage { position: relative; min-height: 100vh; overflow: hidden; }
+.proj .poster img, .proj canvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+.proj canvas { opacity: 0; }
+.proj.on canvas { opacity: 1; }
+.proj.on .poster { visibility: hidden; }
+/* темні краї зверху й знизу — щоб білий текст читався і на білому папері креслення */
+.proj .stage::after { content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background: linear-gradient(180deg, rgb(5 31 32 / .72), rgb(5 31 32 / 0) 30%, rgb(5 31 32 / 0) 62%, rgb(5 31 32 / .78)); }
+.proj .intro { position: absolute; z-index: 2; left: var(--gutter); top: calc(var(--head) + 4vh); max-width: 46vw; }
+.proj .intro .mono { color: #B5EBC4; margin: 0; }
+.proj .ttl { margin: 10px 0 0; font: 300 clamp(36px, 4vw + 10px, 84px)/.95 var(--ui); text-transform: uppercase; text-wrap: balance; }
+.proj .stages { position: absolute; z-index: 2; left: var(--gutter); bottom: 6vh; list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; font: 400 var(--fs-lg)/1.2 var(--ui); }
+.proj .stages b { color: #8EB69B; font-weight: 500; margin-right: 10px; }
+.proj.on .stages li { opacity: .38; transition: opacity .4s var(--ease); }
+.proj.on .stages li.on { opacity: 1; }
+.proj .final { position: absolute; z-index: 2; right: var(--gutter); bottom: 6vh; margin: 0; max-width: 40vw; text-align: right;
+  font: 300 clamp(28px, 3vw + 8px, 64px)/1 var(--ui); text-transform: uppercase; }
+.proj.on .final { opacity: 0; transform: translateY(16px); transition: opacity .6s var(--ease), transform .6s var(--ease); }
+.proj.on .final.in { opacity: 1; transform: none; }
+.proj.on { height: 420vh; }
+.proj.on .stage { position: sticky; top: 0; height: 100vh; }
+@media (max-width: 767px) {
+  .proj .intro { max-width: none; right: var(--gutter); }
+  .proj .stages { font-size: var(--fs-md); gap: 4px; bottom: 9vh; }
+  .proj .final { left: var(--gutter); right: var(--gutter); max-width: none; text-align: left; bottom: 2.5vh; font-size: 26px; }
+}
 </style>
 <script>document.documentElement.classList.add('js');</script>
 </head>
@@ -406,19 +435,22 @@ section.grow { --grow-bg: #1b1610; background: var(--grow-bg); color: #EAF3EC; }
   </div>
 </section>
 
-<section class="grow" data-theme="dark" id="grow" aria-labelledby="grow-t" data-grow="120">
+<section class="proj" data-theme="dark" id="project" aria-labelledby="proj-t" data-project>
   <div class="stage">
-    <div class="intro"><p class="mono">Від землі до саду</p><h2 class="ttl" id="grow-t" data-reveal="sweep">Сад росте на очах</h2></div>
-    <div class="isle">
-      <img class="poster" src="img/island/island_0120.webp" alt="Острівець саду: газон, доріжка з плитки, кулі самшиту, туї й дерево" width="750" height="820" loading="lazy">
-      <canvas aria-hidden="true"></canvas>
-    </div>
-    <ol class="tags">
-      <li data-from="14" style="--x: 83%; --y: 22%"><i aria-hidden="true" style="--img: url(img/svc-gazon.webp)"></i><span><b class="mono">01</b> Газон за день</span></li>
-      <li data-from="34" style="--x: 23%; --y: 48%" class="l"><i aria-hidden="true" style="--img: url(img/svc-blagoustrij.webp)"></i><span><b class="mono">02</b> Доріжки й плитка</span></li>
-      <li data-from="52" style="--x: 83%; --y: 62%"><i aria-hidden="true" style="--img: url(img/svc-ozelenennya.webp)"></i><span><b class="mono">03</b> Самшит і туї з власних розсадників</span></li>
-      <li data-from="78" style="--x: 23%; --y: 76%" class="l"><i aria-hidden="true" style="--img: url(img/case-svitlo-park.webp)"></i><span><b class="mono">04</b> Дерева-крупноміри</span></li>
+    <picture class="poster">
+      <source media="(max-width: 767px)" srcset="img/svitlo/photo-m.webp">
+      <img src="img/svitlo/photo.webp" alt="ЖК «Світлопарк»: двір з газонами, живоплотами й деревами, озеленення Green Garth — фото з висоти" width="2400" height="1597" loading="lazy">
+    </picture>
+    <canvas aria-hidden="true"></canvas>
+    <div class="intro"><p class="mono">ЖК «Світлопарк», Київ · 2025</p><h2 class="ttl" id="proj-t">Від проєкту до реального</h2></div>
+    <ol class="stages">
+      <li data-at="0"><b class="mono">01</b> Дендроплан, М 1:300</li>
+      <li data-at="0.12"><b class="mono">02</b> Мощення й доріжки</li>
+      <li data-at="0.34"><b class="mono">03</b> Газони</li>
+      <li data-at="0.56"><b class="mono">04</b> Кущі й живоплоти</li>
+      <li data-at="0.74"><b class="mono">05</b> Дерева</li>
     </ol>
+    <p class="final">Точно як у проєкті</p>
   </div>
 </section>
 
