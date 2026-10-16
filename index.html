@@ -1,0 +1,489 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Green Garth - компанія ландшафтного дизайну в Києві</title>
+<meta name="description" content="Компанія ландшафтного дизайну Грін Гарт 🌿 Проектування, благоустрій та сучасні ландшафтні рішення 🏡 Фірма ландшафтного дизайну в Києві">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- CSS шрифтів не блокує перший кадр: H1 — LCP-елемент і малюється запасним шрифтом з тими ж метриками -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geologica:wght@300..500&family=JetBrains+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geologica:wght@300..500&family=JetBrains+Mono:wght@400;500&display=swap"></noscript>
+<style>
+/* Green Garth+ · система Likova: токени, розділи-«стовпи», плашки з уступом, компоненти.
+   Стартові стани анімацій ставить скрипт: без JS усе видно (docs/design-system.md, §11). */
+
+/* запасні шрифти з метриками Geologica і JetBrains Mono (виміряно canvas measureText): підміна після
+   завантаження не зсуває плашку першого екрана */
+/* Geologica 300 ширша за Arial на 4.4 %, 400 — на 5.9 %: окремі грані, щоб і H1 (300), і підзаголовок (400) не переносились інакше */
+@font-face { font-family: "Geologica fallback"; font-weight: 100 349; src: local("Arial"), local("ArialMT"); size-adjust: 104.4%; ascent-override: 93.9%; descent-override: 26.8%; line-gap-override: 0%; }
+@font-face { font-family: "Geologica fallback"; font-weight: 350 900; src: local("Arial"), local("ArialMT"); size-adjust: 105.9%; ascent-override: 92.5%; descent-override: 26.4%; line-gap-override: 0%; }
+@font-face { font-family: "JetBrains Mono fallback"; src: local("Courier New"), local("CourierNewPSMT"); size-adjust: 100%; ascent-override: 102%; descent-override: 30%; line-gap-override: 0%; }
+:root, [data-theme="light"] {
+  --bg: #FFFFFF; --bg2: #E7EEE9; --ink: #0B1F1C; --ink2: #4A5D55; --line: #D2DDD6;
+  --acc: #235347; --acc-bg: #DCEBE1; --warn: #9E5615; --edge: #3FA36B;
+}
+[data-theme="dark"] {
+  --bg: #051F20; --bg2: #0B2B26; --ink: #EAF3EC; --ink2: #9DB5A6; --line: #1E3A33;
+  --acc: #8EB69B; --acc-bg: #163832; --warn: #E0975A; --edge: #B5EBC4;
+}
+:root {
+  --ui: "Geologica", "Geologica fallback", system-ui, "Segoe UI", Roboto, sans-serif;
+  --mono: "JetBrains Mono", "JetBrains Mono fallback", ui-monospace, Consolas, monospace;
+  --gutter: 24px; --head: 64px; --step: clamp(40px, 6vw, 92px);
+  --fs-mono: clamp(11px, 0.7vw + 8px, 12px); --fs-xs: clamp(13px, 0.2vw + 12px, 14px);
+  --fs-sm: clamp(15px, 0.2vw + 14px, 16px); --fs-md: clamp(16px, 0.3vw + 15px, 18px);
+  --fs-lg: clamp(20px, 0.6vw + 17px, 24px); --fs-xl: clamp(28px, 1.6vw + 20px, 40px);
+  --fs-2xl: clamp(40px, 3vw + 26px, 64px); --fs-3xl: clamp(34px, min(5vw + 18px, 7.2vh), 96px);
+  --fs-sect: clamp(48px, 9vw + 10px, 140px);
+  --ease: cubic-bezier(.2, .8, .2, 1);
+}
+@media (min-width: 768px) { :root { --gutter: 48px; --head: 72px; } }
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+html.lenis, html.lenis body { height: auto; }
+.lenis.lenis-smooth { scroll-behavior: auto !important; }
+body { margin: 0; font: 400 var(--fs-md)/1.55 var(--ui); background: #051F20; color: var(--ink); -webkit-font-smoothing: antialiased; }
+img, svg, video, canvas { display: block; max-width: 100%; }
+a { color: inherit; text-decoration: none; }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--acc); outline-offset: 2px; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.skip { position: fixed; left: 12px; top: -60px; z-index: 100; background: var(--acc); color: var(--bg); padding: 10px 16px; font: 500 var(--fs-sm) var(--mono); }
+.skip:focus { top: 12px; }
+.mono { font: 500 var(--fs-mono)/1.4 var(--mono); letter-spacing: .06em; text-transform: uppercase; }
+.caps { text-transform: uppercase; }
+section[data-theme] { background: var(--bg); color: var(--ink); position: relative; }
+
+/* ---------- шапка ---------- */
+.head { position: fixed; inset: 0 0 auto; z-index: 50; height: var(--head); display: flex; align-items: center; gap: 24px;
+  padding-inline: var(--gutter); color: var(--ink); background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-bottom: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
+  transition: background-color .3s, color .3s, border-color .3s; }
+.burger { width: 44px; height: 44px; display: grid; place-items: center; background: none; border: 0; cursor: pointer; padding: 0; }
+.burger i { display: block; width: 26px; height: 1px; background: currentColor; box-shadow: 0 6px 0 currentColor; transform: translateY(-3px); }
+.logo { display: block; height: calc(var(--head) - 22px); flex: none; }
+.logo svg { height: 100%; width: auto; overflow: visible; }
+.logo path { fill: currentColor; }
+.head nav { display: none; gap: 28px; margin-left: auto; }
+.head nav a { font: 400 var(--fs-sm) var(--ui); text-transform: uppercase; letter-spacing: .02em; padding: 10px 0; }
+.head .tel { margin-left: auto; font: 500 var(--fs-sm) var(--mono); white-space: nowrap; padding: 10px 0; }
+.head .lang { font: 500 var(--fs-mono) var(--mono); color: var(--ink2); letter-spacing: .06em; }
+.head .lang b { color: var(--ink); font-weight: 500; }
+.head .cta { display: none; }
+@media (min-width: 1100px) { .head nav { display: flex; } .head .tel { margin-left: 0; } .head .cta { display: inline-flex; } }
+@media (max-width: 560px) { .head .tel span { display: none; } .head .tel::before { content: "☎"; font-size: 18px; } .head .lang { display: none; } }
+
+/* ---------- кнопки ---------- */
+/* наведення: кнопка заливається зліва направо однією смугою (фон 201% і зсув позиції), без поділу на букви */
+.btn { display: inline-flex; align-items: center; justify-content: space-between; gap: 18px; min-height: 52px; padding: 0 22px 0 26px;
+  background: linear-gradient(90deg, var(--ink) 0 50%, var(--acc) 50% 100%) 100% 0 / 201% 100% no-repeat; color: var(--bg);
+  font: 500 var(--fs-sm)/1 var(--mono); text-transform: uppercase; letter-spacing: .06em;
+  border: 1px solid var(--acc); cursor: pointer; transition: background-position .5s var(--ease), color .25s, border-color .25s; }
+.btn:hover, .btn:focus-visible { background-position: 0 0; border-color: var(--ink); }
+.btn.ghost { background-image: linear-gradient(90deg, var(--acc) 0 50%, transparent 50% 100%); color: var(--ink); border-color: var(--line); }
+.btn.ghost:hover, .btn.ghost:focus-visible { color: var(--bg); border-color: var(--acc); }
+.btn svg { width: 16px; height: 16px; flex: none; }
+.head .btn { min-height: 44px; padding: 0 18px; }
+@media (max-width: 767px) { .hero .btn { width: 100%; } }
+
+/* поява тексту смугою (8.2): рядок у background-clip: text, градієнт 350 %; --p 30 → 100 веде смугу зліва направо.
+   padding із від'ємним margin — щоб фон накрив бреве Й і крапки Ї над рядком із line-height < 1 */
+.sweep-line { --p: 0; padding-block: .14em; margin-block: -.14em; color: transparent; -webkit-text-fill-color: transparent;
+  background: linear-gradient(90deg, var(--c-final) 0%, var(--c-final) 30%, var(--edge) 40%, transparent 50%, transparent 100%) 0 0 / 350% 100% no-repeat;
+  background-position-x: calc((100 - var(--p)) * 1%); -webkit-background-clip: text; background-clip: text; }
+
+/* наведення на текст: колір акценту заливає слова зліва направо (градієнт у background-clip: text),
+   текст лишається одним вузлом — без розбиття на букви */
+[data-fill] { background: linear-gradient(90deg, var(--acc) 0 48%, var(--ink) 52% 100%) 100% 0 / 210% 100% no-repeat;
+  -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent;
+  transition: background-position .55s var(--ease); }
+a:hover [data-fill], a:focus-visible [data-fill], a[data-fill]:hover, a[data-fill]:focus-visible { background-position: 0 0; }
+
+/* ---------- розділ-«стовп»: фото приклеєне, плашка виїжджає поверх ---------- */
+.stovp { min-height: 100vh; }
+.stovp > .media { position: sticky; top: 0; height: 100vh; overflow: hidden; z-index: 0; }
+.stovp > .media img, .stovp > .media video { width: 100%; height: 100%; object-fit: cover; }
+.stovp > .media::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgb(5 31 32 / .35), rgb(5 31 32 / 0) 30%, rgb(5 31 32 / 0) 60%, rgb(5 31 32 / .45)); pointer-events: none; }
+.stovp > .over { position: relative; z-index: 1; margin-top: -42vh; padding: 0 var(--gutter) 14vh; display: flex; }
+.stovp.right > .over { justify-content: flex-end; }
+
+.plate { position: relative; width: min(100%, 980px); background: var(--bg); color: var(--ink);
+  padding: calc(var(--step) + 28px) clamp(20px, 3vw, 44px) clamp(24px, 3vw, 40px);
+  clip-path: polygon(0 0, 62% 0, 62% var(--step), 100% var(--step), 100% 100%, 0 100%); }
+.right .plate { clip-path: polygon(0 var(--step), 38% var(--step), 38% 0, 100% 0, 100% 100%, 0 100%); }
+.plate .num { position: absolute; top: calc(var(--step) - 11px); width: 22px; height: 22px; border-radius: 50%; background: var(--acc); color: var(--bg);
+  display: grid; place-items: center; font: 500 11px/1 var(--mono); left: calc(62% + 14px); }
+.right .plate .num { left: auto; right: calc(62% + 14px); }
+.plate .lbl { margin: -6px 0 10px; color: var(--ink2); }
+.right .plate .lbl, .right .plate .ttl { text-align: right; }
+.plate .ttl { margin: 0; font: 300 var(--fs-sect)/.92 var(--ui); text-transform: uppercase; letter-spacing: -.01em; overflow-wrap: anywhere; }
+.plate .cap { margin: 18px 0 0; font: 400 var(--fs-xs)/1.35 var(--ui); text-transform: uppercase; color: var(--ink2); max-width: 26ch; }
+.right .plate .cap { margin-left: auto; text-align: right; }
+.plate .txt { margin: clamp(40px, 8vh, 96px) 0 0 auto; max-width: 46ch; font: 400 var(--fs-sm)/1.45 var(--ui); text-transform: uppercase; }
+.right .plate .txt { margin-left: 0; }
+@media (max-width: 767px) {
+  .stovp > .over { margin-top: -30vh; padding-inline: 0; }
+  .plate, .right .plate { width: 100%; clip-path: polygon(0 0, 70% 0, 70% var(--step), 100% var(--step), 100% 100%, 0 100%); }
+  .plate .num, .right .plate .num { left: calc(70% + 12px); right: auto; }
+  .right .plate .lbl, .right .plate .ttl, .right .plate .cap { text-align: left; margin-left: 0; }
+}
+
+/* ---------- перший екран ---------- */
+.hero { min-height: 100vh; }
+/* світлий перший екран: трав'яна G на білому, а не зелене на зеленому газоні («Сяйво» — м'ятні плями на білому).
+   Великий світлий градієнт на 8-бітному екрані йде смугами — зверху ледь помітне зерно (SVG-шум) */
+section.hero { background:
+  radial-gradient(55% 50% at 10% 92%, rgb(196 224 205 / .85), transparent 72%),
+  radial-gradient(48% 44% at 92% 10%, rgb(220 236 226 / .9), transparent 70%),
+  radial-gradient(62% 58% at 78% 88%, rgb(178 214 190 / .7), transparent 72%),
+  radial-gradient(40% 36% at 30% 8%, rgb(236 245 239 / .9), transparent 70%),
+  #FBFDFB; }
+.hero::after { content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .045 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+.hero .in { position: relative; z-index: 2; min-height: 100vh; display: flex; flex-direction: column; justify-content: flex-end; padding: calc(var(--head) + 24px) var(--gutter) clamp(24px, 5vh, 56px); }
+/* «ЛАНДШАФТНОГО» при 96 px ≈ 812 px — плашка має вмістити його з полями */
+.hero .plate { width: min(100%, 940px); }
+/* на телефоні плашка на всю ширину, як у «стовпах»: інакше «ЛАНДШАФТНОГО» не влазить */
+@media (max-width: 767px) { .hero .in { padding-inline: 0; } }
+.hero .lbl { color: var(--ink2); margin: 0 0 14px; }
+.hero h1 { margin: 0; font: 300 var(--fs-3xl)/.98 var(--ui); text-transform: uppercase; letter-spacing: -.01em; max-width: 15ch; text-wrap: balance; }
+.hero .sub { margin: 18px 0 0; max-width: 40ch; color: var(--ink2); }
+.hero .acts { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+/* G займає лише вільне місце над плашкою (flex-basis 0), тож на низьких екранах не залазить під H1 */
+.hero .static-g { flex: 1 1 0; min-height: 0; max-height: min(46vh, 40vw); width: 100%; margin-bottom: 16px; object-fit: contain; object-position: left bottom; opacity: .95; }
+@media (max-width: 767px) { .hero .static-g { box-sizing: border-box; padding-inline: var(--gutter); } }
+.js .hero .static-g { visibility: hidden; }
+
+/* розсунутий напис і жива G поверх першого екрана (створює скрипт) */
+.lockup { position: fixed; inset: 0; z-index: 40; pointer-events: none; }
+.lockup svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.lockup path { fill: #0B1F1C; }
+.lockup .gslot { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+.lockup .gslot > * { position: absolute; inset: 0; width: 100%; height: 100%; }
+.lockup .gslot canvas { opacity: 0; transition: opacity .5s; }
+.lockup .gslot.live canvas { opacity: 1; }
+.lockup .gslot img { transition: opacity .6s; }
+.lockup .gslot.live img { opacity: 0; }
+.lockup .gslot svg path { fill: #3A6E2F; }
+.head .logo { transition: opacity .2s; }
+.gathering .head .logo { opacity: 0; }
+
+/* ---------- сюжет «від неба до саду» ---------- */
+.story { padding: 18vh var(--gutter) 10vh; }
+.story .intro { max-width: 1100px; }
+.story .intro .ttl { margin: 10px 0 0; font: 300 var(--fs-sect)/.92 var(--ui); text-transform: uppercase; }
+.story .layer { position: relative; margin-top: 8vh; }
+.story .layer img { width: 100%; height: 70vh; object-fit: cover; }
+.js .story:not(.story-on):not(.story-plain) .layer img { display: none; }
+.story .tag { position: relative; margin-top: -60px; width: min(90%, 520px); background: var(--bg); padding: 22px 26px; }
+.story .tag h3 { margin: 6px 0 8px; font: 300 var(--fs-xl)/1 var(--ui); text-transform: uppercase; }
+.story .tag p { margin: 0; color: var(--ink2); font-size: var(--fs-sm); }
+/* з JS — сцена приклеюється, шари накладаються, прокрутка веде камеру */
+.story-on.story { height: 460vh; padding: 0; }
+.story-on .stage { position: sticky; top: 0; height: 100vh; overflow: hidden; }
+.story-on .intro { position: absolute; z-index: 5; left: var(--gutter); right: var(--gutter); top: calc(var(--head) + 6vh); color: #EAF3EC; }
+.story-on .intro .mono { color: #9DB5A6; }
+.story-on .layer { position: absolute; inset: 0; margin: 0; }
+.story-on .layer img { height: 100%; }
+.story-on .tag { position: absolute; margin: 0; bottom: 8vh; left: var(--gutter); }
+.story-on .layer.r .tag { left: auto; right: var(--gutter); }
+.story-on .sky::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgb(5 31 32 / .55), rgb(5 31 32 / .15)); }
+
+/* ---------- послуги рядками ---------- */
+.pad { padding: clamp(80px, 14vh, 160px) var(--gutter); }
+.shead { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px 40px; margin-bottom: clamp(32px, 6vh, 64px); }
+.shead .ttl { margin: 10px 0 0; font: 300 var(--fs-sect)/.92 var(--ui); text-transform: uppercase; }
+.shead p { max-width: 40ch; color: var(--ink2); margin: 0; }
+.rows { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+.rows a { display: grid; grid-template-columns: 32px minmax(0, 1fr) auto; gap: 8px 16px; align-items: baseline; padding: 26px 8px; border-bottom: 1px solid var(--line); transition: background-color .25s; }
+.rows a:hover, .rows a:focus-visible { background: var(--bg2); }
+.rows .n { color: var(--ink2); }
+/* на вузькому екрані назва займає й колонку стрілки: «Ландшафтний» при 28 px ширше за 200 px */
+.rows .nm { grid-column: 2 / 4; font: 300 var(--fs-xl)/1.05 var(--ui); text-transform: uppercase; }
+.rows .ds { grid-column: 2 / 3; color: var(--ink2); font-size: var(--fs-sm); max-width: 60ch; }
+.rows .ar { grid-row: 2; grid-column: 3; align-self: center; width: 44px; height: 44px; display: grid; place-items: center; border: 1px solid var(--line); }
+@media (min-width: 900px) { .rows a { grid-template-columns: 80px minmax(0, 1.1fr) minmax(0, 1fr) 56px; column-gap: 24px; } .rows .nm { grid-column: 2; } .rows .ds { grid-column: 3; } .rows .ar { grid-row: auto; grid-column: 4; } }
+.peek { position: fixed; z-index: 30; left: 0; top: 0; width: 300px; height: 210px; pointer-events: none; opacity: 0; overflow: hidden; }
+.peek img { width: 100%; height: 100%; object-fit: cover; }
+
+/* ---------- цифри ---------- */
+.nums { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border-top: 1px solid var(--line); border-left: 1px solid var(--line); }
+@media (min-width: 900px) { .nums { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.nums > div { container-type: inline-size; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 28px clamp(16px, 2vw, 22px) 32px; display: flex; flex-direction: column; gap: 14px; min-height: 230px; }
+.nums svg { width: 34px; height: 34px; color: var(--acc); }
+.nums b { font: 400 var(--fs-2xl)/1 var(--mono); font-variant-numeric: tabular-nums; margin-top: auto; }
+/* «НАЙБІЛЬША» ≈ 6 кеглів завширшки — кегль від ширини ячейки, щоб слово не вилазило на 360 px і на 900 px у чотири колонки */
+.nums b.word { font: 300 min(var(--fs-xl), 16cqi)/1.05 var(--ui); text-transform: uppercase; }
+.nums span { color: var(--ink2); }
+
+/* ---------- кейси ---------- */
+.case .plate { width: min(100%, 760px); }
+/* найдовша назва кейсу («Рибальський», 11 літер) має вміститись у плашку цілим словом */
+.case .plate .ttl { font-size: clamp(40px, 4.6vw + 8px, 92px); }
+.case .works { margin: 22px 0 0; display: flex; flex-wrap: wrap; gap: 8px; list-style: none; padding: 0; }
+.case .works li { border: 1px solid var(--line); padding: 6px 10px; }
+.case .more { margin-top: 26px; display: inline-flex; }
+.tiles { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+.tiles i { position: absolute; background-repeat: no-repeat; }
+
+/* ---------- процес, команда, блог ---------- */
+.steps { display: grid; gap: 0 32px; grid-template-columns: 1fr; list-style: none; margin: 0; padding: 0; }
+@media (min-width: 768px) { .steps { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.steps li { border-top: 1px solid var(--line); padding: 22px 0 40px; }
+.steps h3 { margin: 14px 0 8px; font: 300 var(--fs-lg)/1.1 var(--ui); text-transform: uppercase; }
+.steps p { margin: 0; color: var(--ink2); font-size: var(--fs-sm); }
+.team { display: grid; gap: 24px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (min-width: 900px) { .team { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.team a { display: block; }
+.team .ph { overflow: hidden; aspect-ratio: 3 / 4; background: var(--bg2); }
+.team img { width: 100%; height: 100%; object-fit: cover; }
+.team h3 { margin: 14px 0 4px; font: 400 var(--fs-lg)/1.15 var(--ui); }
+.team span { color: var(--ink2); }
+.perks { margin: 40px 0 0; display: flex; flex-wrap: wrap; gap: 8px 28px; list-style: none; padding: 0; color: var(--ink2); }
+.blog { display: grid; gap: 0 32px; grid-template-columns: 1fr; }
+@media (min-width: 900px) { .blog { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.blog a { display: flex; flex-direction: column; gap: 14px; border-top: 1px solid var(--line); padding: 22px 0 36px; }
+.blog h3 { margin: 0; font: 400 var(--fs-lg)/1.25 var(--ui); }
+.blog a:hover h3 { color: var(--acc); }
+.all { margin-top: 24px; display: inline-flex; }
+
+/* ---------- форма ---------- */
+.form { display: grid; gap: 20px 32px; grid-template-columns: 1fr; max-width: 1100px; }
+@media (min-width: 768px) { .form { grid-template-columns: 1fr 1fr; } .form .wide { grid-column: 1 / -1; } }
+.f label { display: block; margin-bottom: 8px; color: var(--ink2); }
+.f input, .f select, .f textarea { width: 100%; min-height: 52px; padding: 12px 14px; background: var(--bg2); border: 0; border-bottom: 1px solid var(--line); border-radius: 0; color: var(--ink); }
+.f textarea { min-height: 120px; resize: vertical; }
+.f input:focus, .f select:focus, .f textarea:focus { outline: none; border-bottom-color: var(--acc); box-shadow: inset 0 -2px 0 var(--acc); }
+.f .err { display: none; margin-top: 8px; color: var(--warn); font-size: var(--fs-xs); }
+.f.bad input { border-bottom-color: var(--warn); }
+.f.bad .err { display: block; }
+.agree { display: flex; gap: 12px; align-items: flex-start; color: var(--ink2); font-size: var(--fs-sm); }
+.agree input { width: 22px; height: 22px; accent-color: var(--acc); margin-top: 2px; flex: none; }
+.agree-err { display: none; margin: -8px 0 0; color: var(--warn); font-size: var(--fs-xs); }
+.agree.bad + .agree-err { display: block; }
+.sent { margin: 0; padding: 16px 18px; background: var(--bg2); border-left: 2px solid var(--acc); }
+.sent { margin: 0; padding: 22px 26px; background: var(--acc-bg); color: var(--ink); }
+
+/* ---------- підвал ---------- */
+.foot { padding: 72px var(--gutter) 32px; }
+.foot .cols { display: grid; gap: 32px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+.foot h4 { margin: 0 0 14px; color: var(--ink2); }
+.foot ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.foot a:hover { color: var(--acc); }
+.foot .base { margin-top: 56px; padding-top: 22px; border-top: 1px solid var(--line); display: flex; flex-wrap: wrap; gap: 12px 32px; justify-content: space-between; color: var(--ink2); }
+
+/* ---------- меню ---------- */
+.menu { position: fixed; inset: 0; z-index: 60; display: grid; grid-template-columns: minmax(0, 1fr); visibility: hidden; }
+@media (min-width: 900px) { .menu { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+.menu .pan { background: #FFFFFF; color: #0B1F1C; padding: calc(var(--head) + 6vh) var(--gutter) 40px; display: flex; flex-direction: column; gap: 28px; transform: translateX(-100%); transition: transform .5s var(--ease); }
+.menu .shade { background: rgb(5 31 32 / .55); opacity: 0; transition: opacity .4s; }
+.menu.open { visibility: visible; }
+.menu.open .pan { transform: none; }
+.menu.open .shade { opacity: 1; }
+.menu ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.menu ul a { font: 300 clamp(26px, 3vw, 40px)/1.15 var(--ui); text-transform: uppercase; }
+.menu .x { position: absolute; top: 12px; left: var(--gutter); width: 44px; height: 44px; background: none; border: 0; cursor: pointer; font-size: 26px; color: #0B1F1C; }
+.menu .acts { margin-top: auto; display: flex; flex-wrap: wrap; gap: 12px; }
+
+/* ---------- перехід між сторінками ---------- */
+@view-transition { navigation: auto; }
+::view-transition-old(root) { animation: .45s cubic-bezier(.7, 0, .3, 1) both vt-out; }
+::view-transition-new(root) { animation: .6s cubic-bezier(.7, 0, .3, 1) both vt-in; }
+@keyframes vt-out { to { opacity: .35; transform: translateY(-4%); } }
+@keyframes vt-in { from { clip-path: inset(100% 0 0 0); } to { clip-path: inset(0 0 0 0); } }
+
+/* ---------- прототип: трава на фоні (вибір напряму) ---------- */
+.gf { position: absolute; left: 0; width: 100%; z-index: 1; pointer-events: none; display: block; }
+.gf-edge { bottom: 0; height: 34vh; }
+@media (max-width: 767px) { .gf-edge { height: 22vh; } }
+.gf-meadow, .gf-trail { top: 0; height: 100%; }
+.gf-seam { bottom: 0; height: 130px; }
+</style>
+<script>document.documentElement.classList.add('js');</script>
+</head>
+<body>
+<a class="skip" href="#main">До змісту</a>
+
+<header class="head" data-theme="light">
+  <button class="burger" type="button" aria-label="Меню" aria-controls="menu" aria-expanded="false"><i></i></button>
+  <a class="logo" href="index.html" aria-label="Green Garth+ — на головну"><svg viewBox="255.52 333.19 498.06 287.36" role="img" aria-label="Green Garth+"><image href="img/g-poster.webp" x="257.52" y="335.19" width="262.30" height="283.36" preserveAspectRatio="none"/><path data-l data-row="0" d="M553.22 491.51C555.62 491.51 557.58 490.81 559.12 489.42C560.66 488.03 561.42 486.18 561.42 483.88C561.42 481.57 560.66 479.72 559.12 478.33C557.58 476.94 555.62 476.24 553.22 476.24L541.7 476.24L541.7 491.51ZM570.42 516.85L560.7 516.85L550.05 498.92L541.7 498.92L541.7 516.85L533.27 516.85L533.27 468.83L554.37 468.83C559.07 468.83 562.86 470.22 565.74 473C568.62 475.79 570.06 479.41 570.06 483.88C570.06 487.91 568.96 491.14 566.75 493.56C564.54 495.98 561.86 497.46 558.69 497.99Z"/><path data-l data-row="0" d="M611.39 516.85L578.49 516.85L578.49 468.83L611.39 468.83L611.39 476.24L586.91 476.24L586.91 488.7L610.89 488.7L610.89 496.12L586.91 496.12L586.91 509.44L611.39 509.44Z"/><path data-l data-row="0" d="M652.93 516.85L620.03 516.85L620.03 468.83L652.93 468.83L652.93 476.24L628.46 476.24L628.46 488.7L652.43 488.7L652.43 496.12L628.46 496.12L628.46 509.44L652.93 509.44Z"/><path data-l data-row="0" d="M703.19 516.85L695.05 516.85L670 482.58L670 516.85L661.58 516.85L661.58 468.83L670.21 468.83L694.77 502.16L694.77 468.83L703.19 468.83Z"/><path data-l data-row="1" d="M553.86 559.92L545.22 537.02L536.58 559.92ZM569.34 576.55L559.77 576.55L556.24 567.33L534.21 567.33L530.68 576.55L521.1 576.55L539.97 528.52L550.48 528.52Z"/><path data-l data-row="1" d="M594.54 551.2C596.94 551.2 598.91 550.51 600.45 549.12C601.98 547.73 602.75 545.88 602.75 543.57C602.75 541.27 601.98 539.42 600.45 538.03C598.91 536.64 596.94 535.94 594.54 535.94L583.02 535.94L583.02 551.2ZM611.75 576.55L602.03 576.55L591.37 558.62L583.02 558.62L583.02 576.55L574.6 576.55L574.6 528.52L595.69 528.52C600.4 528.52 604.19 529.92 607.07 532.7C609.95 535.48 611.39 539.11 611.39 543.57C611.39 547.6 610.29 550.83 608.08 553.26C605.87 555.68 603.18 557.16 600.02 557.68Z"/><path data-l data-row="1" d="M639.69 576.55L631.26 576.55L631.26 535.94L616.72 535.94L616.72 528.52L654.23 528.52L654.23 535.94L639.69 535.94Z"/><path data-l data-row="1" d="M703.19 576.55L694.77 576.55L694.77 555.6L669.78 555.6L669.78 576.55L661.36 576.55L661.36 528.52L669.78 528.52L669.78 548.18L694.77 548.18L694.77 528.52L703.19 528.52Z"/><path data-l data-row="-1" d="M751.5813 527.0118H738.6933V541.6278H732.4293V527.0118H719.4693V521.3238H732.4293V507.28380000000004H738.6933V521.3238H751.5813Z"/><path data-base d="M400.3 610.83C362.49 610.83 330.69 598.57 304.89 574.04C279.09 549.52 266.19 517.59 266.19 478.25C266.19 438.92 279.09 407.05 304.89 382.65C330.69 358.26 362.49 346.06 400.3 346.06C444.23 346.06 478.59 363.82 503.37 399.32L466.59 420.01C459.43 410.05 450.04 401.88 438.42 395.49C426.8 389.11 414.09 385.91 400.3 385.91C375.01 385.91 354 394.6 337.27 411.97C320.53 429.34 312.17 451.43 312.17 478.25C312.17 505.08 320.53 527.24 337.27 544.73C354 562.23 375.01 570.98 400.3 570.98C412.3 570.98 423.73 568.68 434.59 564.08C445.45 559.48 454.19 554.12 460.84 547.99L460.84 508.14L384.59 508.14L384.59 468.68L505.67 468.68L505.67 564.47C477.82 595.38 442.7 610.83 400.3 610.83" style="display:none"/></svg></a>
+  <nav aria-label="Розділи">
+    <a href="#services" data-fill>Послуги</a>
+    <a href="#cases" data-fill>Портфоліо</a>
+    <a href="#team" data-fill>Про нас</a>
+    <a href="#blog" data-fill>Блог</a>
+    <a href="#contacts" data-fill>Контакти</a>
+  </nav>
+  <a class="tel" href="tel:+380678867688"><span>+380 67 886 76 88</span><span class="sr-only">Подзвонити</span></a>
+  <span class="lang"><b>UA</b> / <a href="#ru" title="Російська версія — після погодження">RU</a></span>
+  <a class="btn cta" href="#zayavka">Замовити</a>
+</header>
+
+<div class="menu" id="menu" aria-hidden="true">
+  <div class="pan" role="dialog" aria-label="Меню" aria-modal="true">
+    <button class="x" type="button" aria-label="Закрити меню">×</button>
+    <ul>
+      <li><a href="#services" data-fill>Ландшафтний дизайн</a></li>
+      <li><a href="#services" data-fill>Благоустрій</a></li>
+      <li><a href="#services" data-fill>Озеленення</a></li>
+      <li><a href="#services" data-fill>Автополив</a></li>
+      <li><a href="service.html" data-fill>Рулонний газон</a></li>
+      <li><a href="#services" data-fill>Оренда спецтехніки</a></li>
+      <li><a href="#cases" data-fill>Портфоліо</a></li>
+      <li><a href="#blog" data-fill>Блог</a></li>
+    </ul>
+    <div class="acts"><a class="btn" href="#zayavka">Замовити консультацію</a><a class="btn ghost" href="tel:+380678867688">Подзвонити</a></div>
+  </div>
+  <div class="shade"></div>
+</div>
+
+<main id="main">
+
+<section class="hero" data-theme="light" id="top" aria-labelledby="h1">
+  <div class="in">
+    <img class="static-g" src="img/g-poster.webp" alt="" aria-hidden="true" fetchpriority="low" decoding="async">
+    <div class="plate" data-theme="dark">
+      <p class="lbl mono">[00] Ландшафтна компанія · з 2007</p>
+      <h1 id="h1">Компанія ландшафтного дизайну Green Garth</h1>
+      <p class="sub">Комплексний та якісний підхід в створенні простору для життя</p>
+      <div class="acts">
+        <a class="btn" href="#zayavka">Замовити консультацію <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 8h11M9 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></a>
+        <a class="btn ghost" href="https://www.greengarth.com.ua/landshaftnyy-dyzayn-fotogalereya/">Портфоліо</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="story" data-theme="dark" id="story" aria-labelledby="story-t" data-story>
+  <div class="stage">
+    <div class="intro">
+      <p class="mono" data-reveal="mono">[01] Від неба до саду</p>
+      <h2 class="ttl" id="story-t" data-reveal="sweep">Зверху — план.<br>Зблизька — сад</h2>
+    </div>
+    <div class="layer sky" data-step="0"><img src="img/hero-b-aerial.webp" alt="Аерофото двору ЖК, озелененого Green Garth" loading="lazy" fetchpriority="low"></div>
+    <div class="layer" data-step="1"><img src="img/svc-dyzajn.webp" alt="Сад зі сходами і живоплотом" loading="lazy" fetchpriority="low"></div>
+    <div class="layer" data-step="2"><img src="img/svc-gazon.webp" alt="Укладання рулонного газону" loading="lazy" fetchpriority="low">
+      <div class="tag"><p class="mono">01 · Газон</p><h3>Рулонний газон</h3><p>Власні поля, укладання за день, ходити можна за кілька днів.</p></div></div>
+    <div class="layer r" data-step="3"><img src="img/svc-polyv.webp" alt="Система автоматичного поливу" loading="lazy" fetchpriority="low">
+      <div class="tag"><p class="mono">02 · Полив</p><h3>Автоматичний полив</h3><p>Проєкт і монтаж систем поливу на обладнанні зі США. Обслуговування.</p></div></div>
+    <div class="layer" data-step="4"><img src="img/svc-ozelenennya.webp" alt="Висаджені хвойні дерева" loading="lazy" fetchpriority="low">
+      <div class="tag"><p class="mono">03 · Озеленення</p><h3>Озеленення</h3><p>Крупноміри, кущі, квітники, мульчування. Рослини з власних розсадників.</p></div></div>
+  </div>
+</section>
+
+<section class="pad" data-theme="light" id="services" aria-labelledby="svc-t">
+  <div class="shead">
+    <div><p class="mono" data-reveal="mono">[02] Послуги</p><h2 class="ttl" id="svc-t" data-reveal="sweep">Шість напрямів</h2></div>
+    <p data-reveal="sweep">Від ескізу до догляду за готовим садом — своїми бригадами, рослинами й технікою.</p>
+  </div>
+  <ul class="rows">
+    <li><a href="https://www.greengarth.com.ua/landshaftnyj-dyzajn/" data-row="img/svc-dyzajn.webp"><span class="n mono">01</span><span class="nm" data-fill>Ландшафтний дизайн</span><span class="ds">Від ескізу до 3D-візуалізації. Ви обираєте стиль, ми створюємо ландшафт.</span><span class="ar" aria-hidden="true">→</span></a></li>
+    <li><a href="https://www.greengarth.com.ua/blagoustrij-terytoriyi/" data-row="img/svc-blagoustrij.webp"><span class="n mono">02</span><span class="nm" data-fill>Благоустрій території</span><span class="ds">Тротуарна плитка, доріжки, тверді покриття під ключ: від основи до фінішу.</span><span class="ar" aria-hidden="true">→</span></a></li>
+    <li><a href="https://www.greengarth.com.ua/ozelenennya-terytorij/" data-row="img/svc-ozelenennya.webp"><span class="n mono">03</span><span class="nm" data-fill>Озеленення територій</span><span class="ds">Крупноміри, кущі, квітники, мульчування. Рослини з власних розсадників.</span><span class="ar" aria-hidden="true">→</span></a></li>
+    <li><a href="https://www.greengarth.com.ua/avtomatychnyj-polyv/" data-row="img/svc-polyv.webp"><span class="n mono">04</span><span class="nm" data-fill>Автоматичний полив</span><span class="ds">Проєкт і монтаж систем поливу на обладнанні зі США. Обслуговування.</span><span class="ar" aria-hidden="true">→</span></a></li>
+    <li><a href="service.html" data-real="https://www.greengarth.com.ua/rulonnyj-gazon/" data-row="img/svc-gazon.webp"><span class="n mono">05</span><span class="nm" data-fill>Рулонний газон</span><span class="ds">Власні поля, укладання за день, ходити можна за кілька днів.</span><span class="ar" aria-hidden="true">→</span></a></li>
+    <li><a href="https://www.greengarth.com.ua/orenda-tehniky/" data-row="img/svc-orenda.webp"><span class="n mono">06</span><span class="nm" data-fill>Оренда спецтехніки</span><span class="ds">Avant 745, Kramer 750, CAT 301.8 з оператором по Києву й області.</span><span class="ar" aria-hidden="true">→</span></a></li>
+  </ul>
+</section>
+<div class="peek" aria-hidden="true"><img alt=""></div>
+
+<section class="pad" data-theme="dark" id="numbers" aria-labelledby="num-t">
+  <div class="shead"><div><p class="mono" data-reveal="mono">[03] Цифри</p><h2 class="ttl" id="num-t" data-reveal="sweep">З 2007 року</h2></div></div>
+  <div class="nums">
+    <div><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true"><path d="M4 28V12l8-6 8 6v16M20 28V16l8 4v8M2 28h28M9 28v-7h6v7"/></svg><b data-count="1500" data-suffix="+">1500+</b><span class="mono">Реалізованих об'єктів</span></div>
+    <div><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true"><rect x="4" y="7" width="24" height="21"/><path d="M4 13h24M10 4v6M22 4v6M9 18h4M15 18h4M21 18h2M9 23h4"/></svg><b data-count="17" data-suffix="+">17+</b><span class="mono">Років досвіду</span></div>
+    <div><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true"><path d="M3 22c4-3 8-3 12 0s9 3 14 0M3 16c4-3 8-3 12 0s9 3 14 0M6 10l2-5M11 10l1-6M16 10l2-5M21 10l1-6M26 10l2-5"/></svg><b data-count="34" data-prefix="" data-suffix=" га+">34 га+</b><span class="mono">Укладеного рулонного газону</span></div>
+    <div><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true"><path d="M3 18 16 7l13 11M6 16v12h20V16M10 14c2-3 4-3 6 0 2-3 4-3 6 0"/></svg><b class="word">Найбільша в Україні</b><span class="mono">Зелена покрівля</span></div>
+  </div>
+</section>
+
+<div id="cases">
+<section class="stovp case" data-theme="dark" aria-labelledby="c1-t">
+  <div class="media" data-tiles><img src="img/case-svitlo-park.webp" alt="ЖК «Svitlo Park», озеленення й автополив" loading="lazy"></div>
+  <div class="over"><div class="plate" data-theme="dark"><span class="num">1</span><p class="lbl mono" data-reveal="mono">[04] Кейси · Київ, 2021</p><h2 class="ttl" id="c1-t" data-reveal="sweep">Svitlo Park</h2><p class="cap">Житловий комплекс. Двір, що став парком</p><ul class="works mono"><li>Озеленення</li><li>Автополив</li><li>Дизайн</li><li>Плитка</li></ul><a class="btn ghost more" href="https://www.greengarth.com.ua/landshaftnyy-dyzayn-fotogalereya/">Портфоліо</a></div></div>
+</section>
+<section class="stovp case right" data-theme="light" aria-labelledby="c2-t">
+  <div class="media" data-tiles><img src="img/case-yevromisto.webp" alt="ЖК «Євромісто», алея з живоплотом" loading="lazy"></div>
+  <div class="over"><div class="plate" data-theme="light"><span class="num">2</span><p class="lbl mono" data-reveal="mono">[04] Кейси · Київ, 2024</p><h2 class="ttl" id="c2-t" data-reveal="sweep">Євромісто</h2><p class="cap">Озеленення й обслуговування житлового кварталу</p><ul class="works mono"><li>Озеленення</li><li>Автополив</li><li>Дизайн</li><li>Обслуговування</li></ul><a class="btn ghost more" href="https://www.greengarth.com.ua/landshaftnyy-dyzayn-fotogalereya/">Портфоліо</a></div></div>
+</section>
+<section class="stovp case" data-theme="dark" aria-labelledby="c3-t">
+  <div class="media" data-tiles><img src="img/case-rybalskyj.webp" alt="ЖК «Рибальський», газон і дерево" loading="lazy"></div>
+  <div class="over"><div class="plate" data-theme="dark"><span class="num">3</span><p class="lbl mono" data-reveal="mono">[04] Кейси · Київ, 2023</p><h2 class="ttl" id="c3-t" data-reveal="sweep">Рибальський</h2><p class="cap">Газони, дерева й полив на острові</p><ul class="works mono"><li>Озеленення</li><li>Автополив</li><li>Дизайн</li><li>Обслуговування</li></ul><a class="btn ghost more" href="https://www.greengarth.com.ua/landshaftnyy-dyzayn-fotogalereya/">Портфоліо</a></div></div>
+</section>
+<section class="stovp case right" data-theme="light" aria-labelledby="c4-t">
+  <div class="media" data-tiles><img src="img/case-arsenal.webp" alt="Завод «Арсенал», озеленення території" loading="lazy"></div>
+  <div class="over"><div class="plate" data-theme="light"><span class="num">4</span><p class="lbl mono" data-reveal="mono">[04] Кейси · Київ, 2020</p><h2 class="ttl" id="c4-t" data-reveal="sweep">Арсенал</h2><p class="cap">Зелень серед цегли історичного заводу</p><ul class="works mono"><li>Озеленення</li><li>Автополив</li><li>Дизайн</li><li>Обслуговування</li></ul><a class="btn ghost more" href="https://www.greengarth.com.ua/landshaftnyy-dyzayn-fotogalereya/">Портфоліо</a></div></div>
+</section>
+</div>
+
+<section class="pad" data-theme="dark" id="process" aria-labelledby="pr-t">
+  <div class="shead"><div><p class="mono" data-reveal="mono">[05] Як ми працюємо</p><h2 class="ttl" id="pr-t" data-reveal="sweep">Шість кроків</h2></div><p data-reveal="sweep">Від першого дзвінка до готового саду і догляду за ним.</p></div>
+  <ol class="steps">
+    <li><span class="mono">01</span><h3 data-reveal="sweep">Контактуємо</h3><p>Заявка або дзвінок — домовляємось про зустріч.</p></li>
+    <li><span class="mono">02</span><h3 data-reveal="sweep">Знайомимось</h3><p>Виїзд на ділянку, замір, кошторис, договір.</p></li>
+    <li><span class="mono">03</span><h3 data-reveal="sweep">Створюємо ескіз</h3><p>Два ескізні варіанти на вибір.</p></li>
+    <li><span class="mono">04</span><h3 data-reveal="sweep">Проєктуємо 3D</h3><p>Після затвердження генплану.</p></li>
+    <li><span class="mono">05</span><h3 data-reveal="sweep">Розробляємо</h3><p>Робочі креслення за технічним завданням.</p></li>
+    <li><span class="mono">06</span><h3 data-reveal="sweep">Реалізуємо</h3><p>Виробничий відділ на ділянці — і далі обслуговування.</p></li>
+  </ol>
+</section>
+
+<section class="pad" data-theme="light" id="team" aria-labelledby="tm-t">
+  <div class="shead"><div><p class="mono" data-reveal="mono">[06] Команда</p><h2 class="ttl" id="tm-t" data-reveal="sweep">Люди за садом</h2></div><p data-reveal="sweep">120+ професіоналів. Ось ті, хто веде ваш напрям.</p></div>
+  <div class="team">
+    <a href="https://www.greengarth.com.ua/ozelenennya-terytorij/"><div class="ph"><img src="img/team-brashoveczkyj.webp" alt="Олександр Брашовецький" loading="lazy" data-reveal="photo"></div><h3>Олександр Брашовецький</h3><span class="mono">Комплексне озеленення</span></a>
+    <a href="https://www.greengarth.com.ua/avtomatychnyj-polyv/"><div class="ph"><img src="img/team-strygun.webp" alt="Сергій Стригун" loading="lazy" data-reveal="photo"></div><h3>Сергій Стригун</h3><span class="mono">Автоматичний полив</span></a>
+    <a href="https://www.greengarth.com.ua/proektuvannya-landshaftnogo-dyzajnu/"><div class="ph"><img src="img/team-golovko.webp" alt="Марія Головко" loading="lazy" data-reveal="photo"></div><h3>Марія Головко</h3><span class="mono">Ландшафтне проєктування</span></a>
+    <a href="https://www.greengarth.com.ua/rulonnyj-gazon/"><div class="ph"><img src="img/team-abdulagimov.webp" alt="Руфат Абдулагімов" loading="lazy" data-reveal="photo"></div><h3>Руфат Абдулагімов</h3><span class="mono">Рулонний газон та озеленення</span></a>
+  </div>
+  <ul class="perks mono"><li>Рослини й газон з власних розсадників</li><li>Обладнання поливу зі США</li><li>Своя спецтехніка</li><li>Працюємо офіційно: ТОВ / ФОП</li></ul>
+</section>
+
+<section class="pad" data-theme="dark" id="blog" aria-labelledby="bl-t">
+  <div class="shead"><div><p class="mono" data-reveal="mono">[07] Блог</p><h2 class="ttl" id="bl-t" data-reveal="sweep">Пишемо про сад</h2></div></div>
+  <div class="blog">
+    <a href="https://www.greengarth.com.ua/blog/landshaftnyj-dyzajn/kupyty-dereva-yak-obraty-yakisnyj-posadkovyj-material-green-garth/"><span class="mono">17.07.2026</span><h3>Купити дерева — як обрати якісний посадковий матеріал</h3></a>
+    <a href="https://www.greengarth.com.ua/blog/landshaftnyj-dyzajn/kupyty-kushhi-chy-hvojni-roslyny-shho-krashhe-obraty-dlya-pryvatnogo-budynku-taunhausa-abo-zhytlovogo-kompleksu/"><span class="mono">17.07.2026</span><h3>Купити кущі чи хвойні рослини: що краще для приватного будинку, таунхауса або ЖК</h3></a>
+    <a href="https://www.greengarth.com.ua/blog/landshaftnyj-dyzajn/chomu-blagoustrij-ta-landshaft-potribno-rozroblyaty-shhe-na-etapi-proyektuvannya-budivnycztva/"><span class="mono">27.05.2026</span><h3>Чому благоустрій та ландшафт потрібно розробляти ще на етапі проєктування будівництва</h3></a>
+  </div>
+  <a class="btn ghost all" href="https://www.greengarth.com.ua/blog/">Усі статті</a>
+</section>
+
+<section class="pad" data-theme="light" id="zayavka" aria-labelledby="fm-t">
+  <div class="shead"><div><p class="mono" data-reveal="mono">[08] Заявка</p><h2 class="ttl" id="fm-t" data-reveal="sweep">Обговоримо ваш сад</h2></div><p data-reveal="sweep">Передзвонимо, розпитаємо про ділянку й домовимось про виїзд.</p></div>
+  <form class="form" method="post" action="#zayavka">
+    <div class="f"><label class="mono" for="f-name">Ім'я</label><input id="f-name" name="name" autocomplete="name"></div>
+    <div class="f" id="f-tel-w"><label class="mono" for="f-tel">Телефон *</label><input id="f-tel" name="tel" type="tel" autocomplete="tel" required aria-describedby="f-tel-e"><p class="err" id="f-tel-e">Вкажіть номер телефону, наприклад +380 67 123 45 67 — без нього ми не зможемо передзвонити.</p></div>
+    <div class="f"><label class="mono" for="f-topic">Тема розмови</label><select id="f-topic" name="topic"><option>Купівля рослин</option><option>Ландшафтне проєктування</option><option>Оренда спецтехніки</option><option>Озеленення території</option><option>Автоматичний полив</option><option>Рулонний газон</option><option>Укладання тротуарної плитки</option></select></div>
+    <div class="f"><label class="mono" for="f-size">Розмір території</label><select id="f-size" name="size"><option>Маленький до 5 соток</option><option>Середній від 5 до 10 соток</option><option>Великий понад 10 соток</option></select></div>
+    <div class="f wide"><label class="mono" for="f-msg">Повідомлення</label><textarea id="f-msg" name="msg"></textarea></div>
+    <label class="agree wide"><input type="checkbox" name="agree" required aria-describedby="f-agree-e"> Даю згоду на обробку персональних даних</label>
+    <p class="agree-err wide" id="f-agree-e">Без згоди ми не можемо прийняти заявку — поставте позначку.</p>
+    <div class="wide"><button class="btn" type="submit">Надіслати</button></div>
+    <p class="sent wide" role="status" tabindex="-1" hidden>Дякуємо! Це прототип — заявка нікуди не надсилається.</p>
+  </form>
+</section>
+
+</main>
+
+<footer class="foot" data-theme="dark" id="contacts">
+  <div class="cols">
+    <div><h4 class="mono">Контакти</h4><ul><li><a href="tel:+380678867688">+380 67 886 76 88</a></li><li><a href="tel:+380663130093">+380 66 313 00 93</a></li><li><a href="mailto:greengarth.ua@gmail.com">greengarth.ua@gmail.com</a></li><li>Київська обл., 08160, с. Гатне (5 хв від м. Теремки), вул. Інститутська, 2</li></ul></div>
+    <div><h4 class="mono">Розділи</h4><ul><li><a href="https://www.greengarth.com.ua/landshaftnyj-dyzajn/">Ландшафтний дизайн</a></li><li><a href="https://www.greengarth.com.ua/blagoustrij-terytoriyi/">Благоустрій</a></li><li><a href="https://www.greengarth.com.ua/ozelenennya-terytorij/">Озеленення</a></li><li><a href="https://www.greengarth.com.ua/avtomatychnyj-polyv/">Автополив</a></li><li><a href="service.html">Рулонний газон</a></li><li><a href="https://www.greengarth.com.ua/orenda-tehniky/">Оренда спецтехніки</a></li></ul></div>
+    <div><h4 class="mono">Компанія</h4><ul><li><a href="https://www.greengarth.com.ua/landshaftnyy-dyzayn-fotogalereya/">Портфоліо</a></li><li><a href="https://www.greengarth.com.ua/blog/">Блог</a></li><li><a href="#team">Про нас</a></li><li><a href="#contacts">Контакти</a></li></ul></div>
+    <div><h4 class="mono">Соцмережі</h4><ul><li>Facebook</li><li>Instagram</li><li>YouTube</li><li>Telegram · Viber</li><li>TikTok</li></ul></div>
+  </div>
+  <div class="base mono"><span>© 2007–2026 Green Garth</span><span><b>UA</b> / RU</span></div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/ScrollTrigger.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/SplitText.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.3.26/dist/lenis.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/earcut@2.2.4/dist/earcut.min.js" defer></script>
+<script src="likova.js" defer></script>
+</body>
+</html>
