@@ -152,18 +152,22 @@
     const steps = $$('.stages li', proj), fin = $('.final', proj);
     const frames = new Array(N), photo = new Image();
     const src = i => `img/fly/${mob ? 'm' : 'f'}_${String(i).padStart(4, '0')}.webp`;
-    let want = 0, p = 0;
+    let want = 0, p = 0, target = 0, raf = 0;
     const ss = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+    const ready = i => frames[i]?.complete && frames[i].naturalWidth;
     const draw = () => {
-      let i = Math.round(want) - (Math.round(want) % step);
-      while (i > 0 && !frames[i]?.complete) i -= step;               // поки потрібний кадр не прийшов — найближчий готовий
-      const im = frames[i]; if (!im?.complete || !im.naturalWidth) return;
+      // між двома готовими сусідніми кадрами — змішування за дробовою частиною: рух без сходинок
+      let i = Math.floor(want / step) * step;
+      while (i > 0 && !ready(i)) i -= step;                          // поки потрібний кадр не прийшов — найближчий готовий
+      if (!ready(i)) return;
+      const j = Math.min(N - 1, i + step), f = ready(j) ? Math.min(1, Math.max(0, (want - i) / step)) : 0;
       const r = cv.getBoundingClientRect(), dpr = Math.min(2, devicePixelRatio || 1), w = Math.round(r.width * dpr), h = Math.round(r.height * dpr);
       if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
       // object-fit: cover у координатах кадру 1920×1080
       const s = Math.max(w / 1920, h / 1080), ox = (w - 1920 * s) / 2, oy = (h - 1080 * s) / 2;
       ctx.globalAlpha = 1;
-      ctx.drawImage(im, ox, oy, 1920 * s, 1080 * s);
+      ctx.drawImage(frames[i], ox, oy, 1920 * s, 1080 * s);
+      if (f > 0.01) { ctx.globalAlpha = f; ctx.drawImage(frames[j], ox, oy, 1920 * s, 1080 * s); }
       const a = ss(0.88, 0.99, p);
       if (a > 0 && photo.complete && photo.naturalWidth) {
         const z = 1 + 0.04 * ss(0.95, 1, p);                           // наприкінці фото трохи ширше, щоб закрити краї кадру
@@ -186,12 +190,19 @@
     const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) { io.disconnect(); start(); } }, {rootMargin: '150% 0px'});
     io.observe(proj);
     addEventListener('load', () => setTimeout(start, 2500), {once: true});
-    ScrollTrigger.create({trigger: proj, start: 'top top', end: 'bottom bottom', onUpdate: self => {
-      p = self.progress;
+    // прогрес з інерцією: кадр доганяє скрол плавно, навіть коли колесо смикає
+    const tick = () => {
+      p += (target - p) * 0.16;
+      if (Math.abs(target - p) < 0.0004) p = target;
       want = Math.min(N - 1, p / 0.97 * (N - 1));
       steps.forEach(li => li.classList.toggle('on', p >= +li.dataset.at));
       fin.classList.toggle('in', p >= 0.93);
       draw();
+      raf = p === target ? 0 : requestAnimationFrame(tick);
+    };
+    ScrollTrigger.create({trigger: proj, start: 'top top', end: 'bottom bottom', onUpdate: self => {
+      target = self.progress;
+      if (!raf) raf = requestAnimationFrame(tick);
     }});
     addEventListener('resize', draw);
   }
