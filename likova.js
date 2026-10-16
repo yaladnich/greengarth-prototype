@@ -126,11 +126,18 @@
   const peek = $('.peek');
   if (peek && !COARSE) {
     const pimg = $('img', peek), qx = gsap.quickTo(peek, 'x', {duration: 0.35, ease: 'power3'}), qy = gsap.quickTo(peek, 'y', {duration: 0.35, ease: 'power3'});
-    $$('a[data-row]').forEach(a => {
-      a.addEventListener('mouseenter', () => { pimg.src = a.dataset.row; gsap.to(peek, {opacity: 1, scale: 1, duration: 0.25}); });
-      a.addEventListener('mouseleave', () => gsap.to(peek, {opacity: 0, scale: 0.92, duration: 0.2}));
-    });
-    addEventListener('pointermove', e => { qx(e.clientX + 28); qy(e.clientY - 105); });
+    // показ за тим, що зараз під курсором: при прокрутці колесом рядок їде з-під курсора без mouseleave
+    let cur = null, px = -1, py = -1;
+    const sync = () => {
+      const a = px < 0 ? null : document.elementFromPoint(px, py)?.closest('a[data-row]') || null;
+      if (a === cur) return;
+      cur = a;
+      if (a) { pimg.src = a.dataset.row; gsap.to(peek, {opacity: 1, scale: 1, duration: 0.25, overwrite: true}); }
+      else gsap.to(peek, {opacity: 0, scale: 0.92, duration: 0.2, overwrite: true});
+    };
+    addEventListener('pointermove', e => { px = e.clientX; py = e.clientY; qx(px + 28); qy(py - 105); sync(); }, {passive: true});
+    addEventListener('scroll', sync, {passive: true});
+    document.addEventListener('pointerleave', () => { px = -1; sync(); });
   }
 
   // ---------- 8.6 сюжет «від неба до саду» ----------
