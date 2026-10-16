@@ -141,6 +141,37 @@
     document.addEventListener('pointerleave', () => { px = -1; sync(); });
   }
 
+  // ---------- «Від землі до саду»: кадри острівця на canvas, кадр = прогрес прокрутки розділу ----------
+  const grow = $('[data-grow]');
+  if (grow) {
+    const N = +grow.dataset.grow, step = innerWidth < 768 ? 2 : 1;   // на телефоні кожен другий кадр — удвічі менше ваги
+    const cv = $('canvas', grow), ctx = cv.getContext('2d'), tags = $$('.tags li', grow);
+    const frames = new Array(N), want = {i: 0};
+    const src = i => `img/island/island_${String(i + 1).padStart(4, '0')}.webp`;
+    const draw = () => {
+      let i = want.i - (want.i % step);
+      while (i > 0 && !frames[i]?.complete) i -= step;          // поки потрібний кадр не прийшов — найближчий готовий
+      const im = frames[i]; if (!im?.complete || !im.naturalWidth) return;
+      const r = cv.getBoundingClientRect(), dpr = Math.min(2, devicePixelRatio || 1), w = Math.round(r.width * dpr), h = Math.round(r.height * dpr);
+      if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
+      ctx.clearRect(0, 0, w, h); ctx.drawImage(im, 0, 0, w, h);
+    };
+    const load = () => { for (let i = 0; i < N; i += step) { const im = new Image(); im.decoding = 'async'; im.src = src(i); im.onload = () => { if (Math.abs(i - want.i) <= step) draw(); }; frames[i] = im; } };
+    // кадри вантажаться, коли розділ на підході, а не з першим екраном
+    let started = false;
+    const start = () => { if (!started) { started = true; load(); } };
+    const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) { io.disconnect(); start(); } }, {rootMargin: '150% 0px'});
+    io.observe(grow);
+    addEventListener('load', () => setTimeout(start, 2500), {once: true});   // запасний шлях, якщо спостерігач не спрацював
+    grow.classList.add('on');
+    ScrollTrigger.create({trigger: grow, start: 'top top', end: 'bottom bottom', onUpdate: self => {
+      want.i = Math.min(N - 1, Math.round(self.progress * (N - 1)));
+      tags.forEach(li => li.classList.toggle('in', want.i + 1 >= +li.dataset.from));
+      draw();
+    }});
+    addEventListener('resize', draw);
+  }
+
   // ---------- 8.6 сюжет «від неба до саду» ----------
   if (story) {
     story.classList.add('story-on');
