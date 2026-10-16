@@ -225,9 +225,8 @@
       draw(Math.min(1, Math.max(0, +Q.get('p'))));
     } else ScrollTrigger.create({trigger: hero, start: 'top top', end: () => '+=' + innerHeight * 0.7, scrub: true, onUpdate: self => draw(self.progress), onRefresh: self => { layout(); draw(self.progress); }});
 
-    // заставка: раз за сесію, поверх уже видимого першого кадру, ≤ 1,5 с
-    let seen = false; try { seen = !!sessionStorage.getItem('gg-intro'); sessionStorage.setItem('gg-intro', '1'); } catch (e) {}
-    const intro = !seen && !Q.has('nointro') && !Q.has('p');
+    // заставка: при кожному відкритті сторінки, поверх уже видимого першого кадру, ≤ 1,5 с
+    const intro = !Q.has('nointro') && !Q.has('p');
     if (intro) {
       gsap.from(L.map(l => l.c), {opacity: 0, y: 60, filter: 'blur(10px)', duration: 0.9, stagger: 0.06, ease: 'power3.out'});
       gsap.from(silhouette, {opacity: 0, scale: 0.92, transformOrigin: '50% 100%', duration: 0.8, ease: 'power3.out'});
