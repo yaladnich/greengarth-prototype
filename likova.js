@@ -147,6 +147,9 @@
     const N = +grow.dataset.grow, step = innerWidth < 768 ? 2 : 1;   // на телефоні кожен другий кадр — удвічі менше ваги
     const cv = $('canvas', grow), ctx = cv.getContext('2d'), tags = $$('.tags li', grow);
     const frames = new Array(N), want = {i: 0};
+    // тло за прокруткою: темний ґрунт, поки земля гола → глибокий зелений, коли сад виріс
+    const STOPS = [[0, [27, 22, 16]], [0.3, [24, 30, 22]], [0.7, [14, 38, 30]], [1, [9, 40, 34]]];
+    const bgAt = p => { let k = 1; while (k < STOPS.length - 1 && p > STOPS[k][0]) k++; const [p0, c0] = STOPS[k - 1], [p1, c1] = STOPS[k], t = Math.min(1, Math.max(0, (p - p0) / (p1 - p0))); return `rgb(${c0.map((v, n) => Math.round(v + (c1[n] - v) * t)).join(' ')})`; };
     const src = i => `img/island/island_${String(i + 1).padStart(4, '0')}.webp`;
     const draw = () => {
       let i = want.i - (want.i % step);
@@ -167,6 +170,7 @@
     ScrollTrigger.create({trigger: grow, start: 'top top', end: 'bottom bottom', onUpdate: self => {
       want.i = Math.min(N - 1, Math.round(self.progress * (N - 1)));
       tags.forEach(li => li.classList.toggle('in', want.i + 1 >= +li.dataset.from));
+      grow.style.setProperty('--grow-bg', bgAt(self.progress));
       draw();
     }});
     addEventListener('resize', draw);
