@@ -350,33 +350,34 @@ section.grow { --grow-bg: #1b1610; background: var(--grow-bg); color: #EAF3EC; }
 .concepts .btn { min-height: 48px; }
 .concepts output:empty { display: none; }
 
-/* ---------- «Від проєкту до реального»: дендроплан Світлопарку проростає фото з дрона (WebGL, карта росту) ---------- */
-section.proj { background: #0E1410; color: #EAF3EC; }
+/* ---------- «Від проєкту до реального»: проліт над двором Світлопарку (Unreal, кадри за скролом), сад росте, кадр перетікає у фото ---------- */
+section.proj { background: #F3F7F2; color: #0B2B26; }
 .proj .stage { position: relative; min-height: 100vh; overflow: hidden; }
-.proj .poster img, .proj canvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
-.proj canvas { opacity: 0; }
+.proj .poster img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+.proj canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; opacity: 0; transition: opacity .6s var(--ease); }
 .proj.on canvas { opacity: 1; }
 .proj.on .poster { visibility: hidden; }
-/* темні краї зверху й знизу — щоб білий текст читався і на білому папері креслення */
+/* світлі краї зверху й знизу — щоб темний текст читався і на фото */
 .proj .stage::after { content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none;
-  background: linear-gradient(180deg, rgb(5 31 32 / .72), rgb(5 31 32 / 0) 30%, rgb(5 31 32 / 0) 62%, rgb(5 31 32 / .78)); }
+  background: linear-gradient(180deg, rgb(243 247 242 / .82), rgb(243 247 242 / 0) 28%, rgb(243 247 242 / 0) 66%, rgb(243 247 242 / .85)); }
 .proj .intro { position: absolute; z-index: 2; left: var(--gutter); top: calc(var(--head) + 4vh); max-width: 46vw; }
-.proj .intro .mono { color: #B5EBC4; margin: 0; }
+.proj .intro .mono { color: #2E7D52; margin: 0; }
 .proj .ttl { margin: 10px 0 0; font: 300 clamp(36px, 4vw + 10px, 84px)/.95 var(--ui); text-transform: uppercase; text-wrap: balance; }
 .proj .stages { position: absolute; z-index: 2; left: var(--gutter); bottom: 6vh; list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; font: 400 var(--fs-lg)/1.2 var(--ui); }
-.proj .stages b { color: #8EB69B; font-weight: 500; margin-right: 10px; }
-.proj.on .stages li { opacity: .38; transition: opacity .4s var(--ease); }
+.proj .stages b { color: #2E7D52; font-weight: 500; margin-right: 10px; }
+.proj.on .stages li { opacity: .35; transition: opacity .4s var(--ease); }
 .proj.on .stages li.on { opacity: 1; }
 .proj .final { position: absolute; z-index: 2; right: var(--gutter); bottom: 6vh; margin: 0; max-width: 40vw; text-align: right;
   font: 300 clamp(28px, 3vw + 8px, 64px)/1 var(--ui); text-transform: uppercase; }
 .proj.on .final { opacity: 0; transform: translateY(16px); transition: opacity .6s var(--ease), transform .6s var(--ease); }
 .proj.on .final.in { opacity: 1; transform: none; }
-.proj.on { height: 420vh; }
+.proj.on { height: 640vh; }
 .proj.on .stage { position: sticky; top: 0; height: 100vh; }
 @media (max-width: 767px) {
   .proj .intro { max-width: none; right: var(--gutter); }
   .proj .stages { font-size: var(--fs-md); gap: 4px; bottom: 9vh; }
   .proj .final { left: var(--gutter); right: var(--gutter); max-width: none; text-align: left; bottom: 2.5vh; font-size: 26px; }
+}
 }
 </style>
 <script>document.documentElement.classList.add('js');</script>
