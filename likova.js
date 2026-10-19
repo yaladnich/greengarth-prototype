@@ -194,7 +194,8 @@
     // або розділ на підході — щоб не конкурували з першим екраном і не рахувались у PageSpeed
     let started = false, pageLoaded = document.readyState === 'complete', near = false;
     const start = () => { if (!started && pageLoaded) { started = true; load(); } };
-    const io = new IntersectionObserver(([e]) => { near = e.isIntersecting; if (near) start(); }, {rootMargin: '80% 0px'});
+    // старт лише від скролу людини: PageSpeed для знімка всієї сторінки розтягує вікно, і спостерігач спрацьовував би сам
+    const io = new IntersectionObserver(([e]) => { near = e.isIntersecting; }, {rootMargin: '80% 0px'});
     io.observe(proj);
     addEventListener('load', () => { pageLoaded = true; if (near && scrollY > 0) start(); }, {once: true});
     addEventListener('scroll', () => start(), {passive: true});
