@@ -151,7 +151,11 @@
     const box = cv.dataset.photo.split(',').map(Number);
     const steps = $$('.stages li', proj), fin = $('.final', proj);
     const frames = new Array(N), photo = new Image();
-    const src = i => `img/fly/${mob ? 'm' : 'f'}_${String(i).padStart(4, '0')}.webp`;
+    // AVIF (−25% до WebP); старі браузери без AVIF отримують WebP
+    let ext = 'webp';
+    const avif = new Promise(res => { const t = new Image(); t.onload = () => res(t.width > 0); t.onerror = () => res(false);
+      t.src = 'data:image/avif;base64,AAAAIGZ0eXBhdmlmAAAAAGF2aWZtaWYxbWlhZk1BMUIAAADybWV0YQAAAAAAAAAoaGRscgAAAAAAAAAAcGljdAAAAAAAAAAAAAAAAGxpYmF2aWYAAAAADnBpdG0AAAAAAAEAAAAeaWxvYwAAAABEAAABAAEAAAABAAABGgAAAB0AAAAoaWluZgAAAAAAAQAAABppbmZlAgAAAAABAABhdjAxQ29sb3IAAAAAamlwcnAAAABLaXBjbwAAABRpc3BlAAAAAAAAAAIAAAACAAAAEHBpeGkAAAAAAwgICAAAAAxhdjFDgQ0MAAAAABNjb2xybmNseAACAAIAAYAAAAAXaXBtYQAAAAAAAAABAAEEAQKDBAAAACVtZGF0EgAKCBgANogQEAwgMg8f8D///8WfhwB8+ErK42A='; });
+    const src = i => `img/fly/${mob ? 'm' : 'f'}_${String(i).padStart(4, '0')}.${ext}`;
     let want = 0, p = 0, target = 0, raf = 0;
     const ss = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
     const ready = i => frames[i]?.complete && frames[i].naturalWidth;
@@ -176,7 +180,8 @@
         ctx.drawImage(photo, ox + px * s, oy + py * s, pw * s, ph * s);
       }
     };
-    const load = () => {
+    const load = async () => {
+      ext = (await avif) ? 'avif' : 'webp';
       photo.src = 'img/svitlo/photo.webp';
       // спершу кожен 6-й кадр (швидкий ескіз прольоту), далі решта
       const order = [];
