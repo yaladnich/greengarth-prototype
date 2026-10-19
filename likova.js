@@ -185,11 +185,14 @@
       order.forEach(i => { const im = new Image(); im.decoding = 'async'; im.src = src(i); im.onload = () => { if (Math.abs(i - want) <= step * 6) draw(); }; frames[i] = im; });
       frames[0].onload = () => { proj.classList.add('on'); ScrollTrigger.refresh(); draw(); };
     };
-    let started = false;
-    const start = () => { if (!started) { started = true; load(); } };
-    const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) { io.disconnect(); start(); } }, {rootMargin: '150% 0px'});
+    // кадри (18 МБ на ПК, 4 МБ на телефоні) вантажаться лише після load і лише коли людина почала гортати
+    // або розділ на підході — щоб не конкурували з першим екраном і не рахувались у PageSpeed
+    let started = false, pageLoaded = document.readyState === 'complete', near = false;
+    const start = () => { if (!started && pageLoaded) { started = true; load(); } };
+    const io = new IntersectionObserver(([e]) => { near = e.isIntersecting; if (near) start(); }, {rootMargin: '80% 0px'});
     io.observe(proj);
-    addEventListener('load', () => setTimeout(start, 2500), {once: true});
+    addEventListener('load', () => { pageLoaded = true; if (near && scrollY > 0) start(); }, {once: true});
+    addEventListener('scroll', () => start(), {passive: true});
     // прогрес з інерцією: кадр доганяє скрол плавно, навіть коли колесо смикає
     const tick = () => {
       p += (target - p) * 0.16;
