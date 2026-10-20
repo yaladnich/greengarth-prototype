@@ -162,7 +162,9 @@ section.hero { background:
 /* розсунутий напис і жива G поверх першого екрана (створює скрипт) */
 .lockup { position: fixed; inset: 0; z-index: 40; pointer-events: none; }
 .lockup svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
-.lockup path { fill: #0B1F1C; }
+.lockup path { fill: var(--lf, #0B1F1C); transition: fill .6s; }
+/* трава на літерах: одне полотно на весь екран поверх контурів літер */
+.lockup canvas.lgrass { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; transition: opacity .6s; }
 .lockup .gslot { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
 .lockup .gslot > * { position: absolute; inset: 0; width: 100%; height: 100%; }
 .lockup .gslot canvas { opacity: 0; transition: opacity .5s; }

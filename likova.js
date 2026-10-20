@@ -327,12 +327,14 @@
     const ov = document.createElement('div'); ov.className = 'lockup'; ov.setAttribute('aria-hidden', 'true');
     const svg = document.createElementNS(NS, 'svg'); ov.appendChild(svg);
     const L = src.map(s => { const c = s.p.cloneNode(true); svg.appendChild(c); return {...s, c}; });
+    const lcv = document.createElement('canvas'); lcv.className = 'lgrass'; ov.appendChild(lcv);
+    const LT = new Float32Array(L.length * 3);          // перетворення кожної літери: масштаб, зсув x, y (px)
     const slot = document.createElement('div'); slot.className = 'gslot';
     slot.innerHTML = `<svg viewBox="${G.x} ${G.y} ${G.w} ${G.h}" preserveAspectRatio="none"><path d="${base.getAttribute('d')}"/></svg><img src="${gi.getAttribute('href')}" alt=""><canvas></canvas>`;
     ov.appendChild(slot); document.body.appendChild(ov);
     const poster = $('img', slot), silhouette = $('svg', slot); gsap.set(poster, {opacity: 0});
 
-    let lay = null, grass = null;
+    let lay = null, grass = null, lgrass = null, lgLive = false;
     const plate = $('.plate:not(.sr-only)', hero);
     function layout() {
       const vw = innerWidth, vh = innerHeight, gut = vw < 768 ? 24 : 48, hd = head.offsetHeight;
@@ -364,13 +366,20 @@
         const sp = lay.pos.get(l), s = lerp(lay.sS, lay.sC, e);
         const tx = lerp(sp.x, lay.R.left + (l.b.x - vb.x) * lay.sC, e), ty = lerp(sp.y, lay.R.top + (l.b.y - vb.y) * lay.sC, e);
         l.c.setAttribute('transform', `matrix(${s} 0 0 ${s} ${tx - l.b.x * s} ${ty - l.b.y * s})`);
+        const k = L.indexOf(l); LT[k * 3] = s; LT[k * 3 + 1] = tx - l.b.x * s; LT[k * 3 + 2] = ty - l.b.y * s;
       }
+      // поки трава жива, літери утворює лише вона (контур прозорий); коли напис збирається в лого шапки,
+      // трава тане, а темні контури літер повертаються
+      const gk = lgLive ? 1 - Math.min(1, Math.max(0, (p - 0.45) / 0.4)) : 0;
+      lcv.style.opacity = gk;
+      ov.style.setProperty('--lf', `rgb(11 31 28 / ${(1 - gk).toFixed(3)})`);
       const gsc = lerp(1, lay.Gc.s / lay.gs, e);
       slot.style.transform = `translate(${lerp(lay.gx, lay.Gc.x, e)}px, ${lerp(lay.gy, lay.Gc.y, e)}px) scale(${gsc})`;
       const done = p >= 0.995;
       ov.style.visibility = done ? 'hidden' : 'visible';
       document.body.classList.toggle('gathering', !done);
       grass?.setActive(!done && !document.hidden);
+      lgrass?.setActive(!done && !document.hidden && P < 0.85);
     }
     layout(); draw(0);
     addEventListener('resize', () => { layout(); draw(P); });
@@ -393,10 +402,131 @@
         const grow = intro && performance.now() - t0 < 2500;
         grass = Grass($('canvas', slot), D, slot, {grow, onReady: () => slot.classList.add('live'), onSlow: () => { slot.classList.remove('live'); gsap.to(poster, {opacity: 1, duration: 0.4}); }});
         grass?.setActive(P < 0.995);
+        lgrass = LetterGrass(lcv, D, L, LT, lay ? lay.gs / lay.sS : 1, {grow,
+          onReady: () => { lgLive = true; draw(P); }, onSlow: () => { lgLive = false; draw(P); }});
+        lgrass?.setActive(P < 0.85);
       }).catch(() => gsap.to(poster, {opacity: 1, duration: 0.6}));
     };
     if (document.readyState === 'complete') startGrass(); else addEventListener('load', startGrass, {once: true});
-    document.addEventListener('visibilitychange', () => grass?.setActive(!document.hidden && P < 0.995));
+    document.addEventListener('visibilitychange', () => { grass?.setActive(!document.hidden && P < 0.995); lgrass?.setActive(!document.hidden && P < 0.85); });
+  }
+
+  // ---------- трава на літерах REEN / ARTH / «+»: ті самі травинки, що на G, «засаджені» в контур кожної літери ----------
+  // Контур літери растеризується в маску; у випадкові точки маски ставляться копії справжніх травинок G
+  // (форма, нахил, кольори), зменшені так, щоб на екрані були того ж розміру, що й на G. Ріст знизу вгору хвилею
+  // зліва направо, вітер і курсор — як у G. Кожна літера має своє перетворення (u_L), бо напис збирається в шапку.
+  function LetterGrass(cv, D, L, LT, fScale, opt) {
+    const gl = cv.getContext('webgl2', {antialias: true, premultipliedAlpha: true, alpha: true});
+    if (!gl || L.length > 16) return null;
+    const hexRgb = h => [1, 3, 5].map(k => parseInt(h.slice(k, k + 2), 16) / 255);
+    const GRAD = Object.fromEntries(Object.entries(D.gradients).map(([k, v]) => [k, [hexRgb(v[0]), hexRgb(v[1])]]));
+    const rnd = (i => () => (i = (i * 16807) % 2147483647) / 2147483647)(11);
+    const flatten = d => {
+      const subs = []; let cur = null, x = 0, y = 0;
+      for (let i = 0; i < d.length;) {
+        const op = d[i++];
+        if (op === 0) { x = d[i]; y = d[i + 1]; i += 2; cur = [x, y]; subs.push(cur); }
+        else if (op === 1) { x = d[i]; y = d[i + 1]; i += 2; cur.push(x, y); }
+        else if (op === 2) { const [x1, y1, x2, y2, x3, y3] = d.slice(i, i + 6); i += 6; for (let k = 1; k <= 4; k++) { const t = k / 4, m = 1 - t; cur.push(m * m * m * x + 3 * m * m * t * x1 + 3 * m * t * t * x2 + t * t * t * x3, m * m * m * y + 3 * m * m * t * y1 + 3 * m * t * t * y2 + t * t * t * y3); } x = x3; y = y3; }
+      }
+      return subs.map(s => { const n = s.length; if (n > 6 && Math.abs(s[0] - s[n - 2]) < 1e-3 && Math.abs(s[1] - s[n - 1]) < 1e-3) s.length = n - 2; return s; }).filter(s => s.length >= 6);
+    };
+    // густота як на G: травинок на одиницю площі маски G (маска — найбільша фігура D.shapes)
+    const R = 3;
+    const maskOf = (d, b) => {
+      const w = Math.ceil(b.width * R) + 2, h = Math.ceil(b.height * R) + 2, c = document.createElement('canvas'); c.width = w; c.height = h;
+      const x = c.getContext('2d'); x.setTransform(R, 0, 0, R, (1 - b.x) * R, (1 - b.y) * R); x.fill(new Path2D(d));
+      const a = x.getImageData(0, 0, w, h).data, m = new Uint8Array(w * h); let n = 0;
+      for (let i = 0; i < m.length; i++) if (a[i * 4 + 3] > 127) { m[i] = 1; n++; }
+      return {m, w, h, n};
+    };
+    const gM = D.mark, gb = {x: gM[0], y: gM[1], width: gM[2] - gM[0], height: gM[3] - gM[1]};
+    const toD = ops => { let s = '', i = 0; while (i < ops.length) { const op = ops[i++]; if (op === 0) { s += `M${ops[i]} ${ops[i + 1]}`; i += 2; } else if (op === 1) { s += `L${ops[i]} ${ops[i + 1]}`; i += 2; } else { s += `C${ops.slice(i, i + 6).join(' ')}`; i += 6; } } return s + 'Z'; };
+    let gArea = 0; for (const sh of D.shapes) { const mm = maskOf(toD(sh), gb); gArea = Math.max(gArea, mm.n); }
+    // тонкі лінії літер: травинки дрібніші, ніж на G, інакше кінчики розмивають контур
+    const f = Math.min(0.6, Math.max(0.22, fScale * (opt.blade || 0.55))), dens = D.blades.length / Math.max(1, gArea) / (f * f) * (opt.density || 1.7);
+    const NA = 14, verts = [], idx = [];
+    const order = L.map((l, i) => i).sort((a, b) => L[a].b.x - L[b].b.x);
+    L.forEach((l, li) => {
+      const mk = maskOf(l.p.getAttribute('d'), l.b), wave = order.indexOf(li) / Math.max(1, L.length - 1);
+      const n = Math.min(7000, Math.round(mk.n * dens));
+      for (let k = 0, tries = 0; k < n && tries < n * 30; tries++) {
+        const px = Math.floor(rnd() * mk.w), py = Math.floor(rnd() * mk.h);
+        // основа травинки — не ближче ~0.8 одиниці до краю літери (перевірка чотирьох сусідів), щоб контур лишався чітким
+        const e = Math.max(1, Math.round(0.8 * R)), at = (x, y) => x >= 0 && y >= 0 && x < mk.w && y < mk.h && mk.m[y * mk.w + x];
+        if (!at(px, py) || !at(px - e, py) || !at(px + e, py) || !at(px, py - e) || !at(px, py + e)) continue;
+        k++;
+        const X = l.b.x - 1 + (px + rnd()) / R, Y = l.b.y - 1 + (py + rnd()) / R;
+        const a = D.blades[Math.floor(rnd() * D.blades.length)];
+        const [s, g0x, g0y, g1x, g1y] = a, c = GRAD[s];
+        const subs = flatten(a.slice(5)).map(sp => sp.map((v, i) => i % 2 ? Y + (v - g0y) * f : X + (v - g0x) * f));
+        const G1x = X + (g1x - g0x) * f, G1y = Y + (g1y - g0y) * f;
+        let ux = G1x - X, uy = G1y - Y; const gl2 = ux * ux + uy * uy || 1, ul = Math.sqrt(gl2); ux /= ul; uy /= ul;
+        let pmin = 1e9, pmax = -1e9, bx = X, by = Y;
+        for (const sp of subs) for (let i = 0; i < sp.length; i += 2) { const q = (sp[i] - X) * ux + (sp[i + 1] - Y) * uy; if (q < pmin) { pmin = q; bx = sp[i]; by = sp[i + 1]; } if (q > pmax) pmax = q; }
+        const Lb = Math.max(0.5, pmax - pmin);
+        const delay = 0.55 * (l.b.y + l.b.height - by) / l.b.height + 0.45 * wave + 0.2 * rnd(), ph = rnd() * 6.283, flex = 0.6 + 0.8 * rnd();
+        for (const sp of subs) {
+          const b0 = verts.length / NA;
+          for (let i = 0; i < sp.length; i += 2) {
+            const x = sp[i], y = sp[i + 1], h = ((x - X) * ux + (y - Y) * uy - pmin) / Lb;
+            const t = Math.min(1, Math.max(0, ((x - X) * (G1x - X) + (y - Y) * (G1y - Y)) / gl2 / 0.9951));
+            verts.push(x, y, bx, by, -uy, ux, h * h * Lb, c[0][0] + (c[1][0] - c[0][0]) * t, c[0][1] + (c[1][1] - c[0][1]) * t, c[0][2] + (c[1][2] - c[0][2]) * t, delay, ph, flex, li);
+          }
+          for (const q of earcut(sp)) idx.push(b0 + q);
+        }
+      }
+    });
+    const VS = `#version 300 es
+in vec2 a_pos; in vec2 a_base; in vec2 a_n; in float a_hl; in vec3 a_col; in vec3 a_rnd; in float a_li;
+uniform float u_t, u_grow, u_push, u_dpr; uniform vec2 u_mouse, u_view; uniform vec3 u_L[16];
+out vec3 v_col;
+float backEase(float t) { t = clamp(t, 0., 1.) - 1.; return 1. + 2.7 * t * t * t + 1.7 * t * t; }
+float wind(vec2 p) { float k = .012, w = 1.6; float b = .55 + .45 * sin(p.x * k - u_t * w) * sin(p.x * k * .37 - u_t * w * .53 + 1.3); return .45 * (b + .18 * sin((p.x * .6 + p.y * .4) * k * 2.3 - u_t * w * 1.7)); }
+void main() {
+  vec3 T = u_L[int(a_li + .5)];
+  float grow = u_grow > .5 ? backEase((u_t - .15 - a_rnd.x * 1.2) / .8) : 1.;
+  vec2 m = (u_mouse - T.yz) / T.x;
+  vec2 W = vec2(wind(a_base), 0.), d = a_base - m; float r = length(d);
+  float R = 70. / max(T.x, .01) * .35;
+  W += d / max(r, 1.) * u_push * 1.1 * smoothstep(R, 0., r);
+  float bend = (dot(W, a_n) + .063 * sin(u_t * 7. + a_rnd.y)) * a_rnd.z;
+  vec2 p = a_base + (a_pos - a_base) * grow + a_n * bend * a_hl * grow;
+  vec2 s = p * T.x + T.yz;
+  gl_Position = vec4(s.x / u_view.x * 2. - 1., 1. - s.y / u_view.y * 2., 0., 1.);
+  v_col = a_col;
+}`;
+    const FS = `#version 300 es
+precision mediump float; in vec3 v_col; out vec4 o; void main() { o = vec4(v_col, 1.); }`;
+    const sh = (type, src) => { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s)); return s; };
+    const prog = gl.createProgram(); gl.attachShader(prog, sh(gl.VERTEX_SHADER, VS)); gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, FS)); gl.linkProgram(prog); gl.useProgram(prog);
+    gl.bindVertexArray(gl.createVertexArray());
+    gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer()); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(verts), gl.STATIC_DRAW);
+    [['a_pos', 2, 0], ['a_base', 2, 2], ['a_n', 2, 4], ['a_hl', 1, 6], ['a_col', 3, 7], ['a_rnd', 3, 10], ['a_li', 1, 13]].forEach(([n, size, off]) => { const l = gl.getAttribLocation(prog, n); if (l < 0) return; gl.enableVertexAttribArray(l); gl.vertexAttribPointer(l, size, gl.FLOAT, false, NA * 4, off * 4); });
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, gl.createBuffer()); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint32Array(idx), gl.STATIC_DRAW);
+    const U = Object.fromEntries(['u_t', 'u_grow', 'u_push', 'u_mouse', 'u_view', 'u_L'].map(n => [n, gl.getUniformLocation(prog, n)]));
+    const N = idx.length, LU = new Float32Array(16 * 3);
+    const mouse = {x: -1e4, y: -1e4, push: 0, target: 0};
+    addEventListener('pointermove', e => { mouse.x = e.clientX; mouse.y = e.clientY; mouse.target = 1; });
+    document.addEventListener('pointerleave', () => { mouse.target = 0; });
+    let active = false, raf = 0, start = performance.now(), frames = 0, slowAcc = 0, readyCalled = false, last = 0;
+    const frame = now => {
+      raf = 0; if (!active) return;
+      const dpr = Math.min(2, devicePixelRatio || 1), w = Math.round(innerWidth * dpr), h = Math.round(innerHeight * dpr);
+      if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
+      mouse.push += (mouse.target - mouse.push) * 0.08;
+      gl.viewport(0, 0, w, h); gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT);
+      LU.set(LT);
+      gl.uniform1f(U.u_t, (now - start) / 1000); gl.uniform1f(U.u_grow, opt.grow ? 1 : 0); gl.uniform1f(U.u_push, mouse.push);
+      gl.uniform2f(U.u_mouse, mouse.x, mouse.y); gl.uniform2f(U.u_view, innerWidth, innerHeight); gl.uniform3fv(U.u_L, LU);
+      gl.drawElements(gl.TRIANGLES, N, gl.UNSIGNED_INT, 0);
+      if (!readyCalled) { readyCalled = true; opt.onReady?.(); }
+      if (frames++ > 10 && frames < 100) slowAcc += Math.max(0, (now - (last || now)) - 22);
+      last = now;
+      if (frames === 100 && COARSE && slowAcc / 90 > 4) { active = false; opt.onSlow?.(); return; }
+      raf = requestAnimationFrame(frame);
+    };
+    return {blades: idx.length, setActive(on) { if (on === active) return; active = on; if (on && !raf) raf = requestAnimationFrame(frame); }};
   }
 
   // ---------- жива трава: 11 тисяч травинок на відеокарті ----------
