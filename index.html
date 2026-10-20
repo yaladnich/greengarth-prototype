@@ -9,18 +9,17 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <!-- CSS шрифтів не блокує перший кадр: H1 — LCP-елемент і малюється запасним шрифтом з тими ж метриками -->
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geologica:wght@300..500&family=JetBrains+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
-<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geologica:wght@300..500&family=JetBrains+Mono:wght@400;500&display=swap"></noscript>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geologica:wght@300..500&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geologica:wght@300..500&display=swap"></noscript>
 <style>
 /* Green Garth+ · система Likova: токени, розділи-«стовпи», плашки з уступом, компоненти.
    Стартові стани анімацій ставить скрипт: без JS усе видно (docs/design-system.md, §11). */
 
-/* запасні шрифти з метриками Geologica і JetBrains Mono (виміряно canvas measureText): підміна після
+/* запасні шрифти з метриками Geologica (виміряно canvas measureText): підміна після
    завантаження не зсуває плашку першого екрана */
 /* Geologica 300 ширша за Arial на 4.4 %, 400 — на 5.9 %: окремі грані, щоб і H1 (300), і підзаголовок (400) не переносились інакше */
 @font-face { font-family: "Geologica fallback"; font-weight: 100 349; src: local("Arial"), local("ArialMT"); size-adjust: 104.4%; ascent-override: 93.9%; descent-override: 26.8%; line-gap-override: 0%; }
 @font-face { font-family: "Geologica fallback"; font-weight: 350 900; src: local("Arial"), local("ArialMT"); size-adjust: 105.9%; ascent-override: 92.5%; descent-override: 26.4%; line-gap-override: 0%; }
-@font-face { font-family: "JetBrains Mono fallback"; src: local("Courier New"), local("CourierNewPSMT"); size-adjust: 100%; ascent-override: 102%; descent-override: 30%; line-gap-override: 0%; }
 :root, [data-theme="light"] {
   --bg: #FFFFFF; --bg2: #E7EEE9; --ink: #0B1F1C; --ink2: #4A5D55; --line: #D2DDD6;
   --acc: #235347; --acc-bg: #DCEBE1; --warn: #9E5615; --edge: #3FA36B;
@@ -31,7 +30,8 @@
 }
 :root {
   --ui: "Geologica", "Geologica fallback", system-ui, "Segoe UI", Roboto, sans-serif;
-  --mono: "JetBrains Mono", "JetBrains Mono fallback", ui-monospace, Consolas, monospace;
+  /* один шрифт на всю сторінку: мітки, кнопки й цифри — та сама Geologica, відрізняються лише капсом і розрядкою */
+  --mono: var(--ui);
   --gutter: 24px; --head: 64px; --step: clamp(40px, 6vw, 92px);
   --fs-mono: clamp(11px, 0.7vw + 8px, 12px); --fs-xs: clamp(13px, 0.2vw + 12px, 14px);
   --fs-sm: clamp(15px, 0.2vw + 14px, 16px); --fs-md: clamp(16px, 0.3vw + 15px, 18px);
@@ -214,7 +214,7 @@ section.hero { background:
 @media (min-width: 900px) { .nums { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 .nums > div { container-type: inline-size; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 28px clamp(16px, 2vw, 22px) 32px; display: flex; flex-direction: column; gap: 14px; min-height: 230px; }
 .nums svg { width: 34px; height: 34px; color: var(--acc); }
-.nums b { font: 400 var(--fs-2xl)/1 var(--mono); font-variant-numeric: tabular-nums; margin-top: auto; }
+.nums b { font: 300 var(--fs-2xl)/1 var(--ui); font-variant-numeric: tabular-nums; margin-top: auto; }
 /* «НАЙБІЛЬША» ≈ 6 кеглів завширшки — кегль від ширини ячейки, щоб слово не вилазило на 360 px і на 900 px у чотири колонки */
 .nums b.word { font: 300 min(var(--fs-xl), 16cqi)/1.05 var(--ui); text-transform: uppercase; }
 .nums span { color: var(--ink2); }
@@ -379,7 +379,9 @@ section.proj { background: #F3F7F2; color: #0B2B26; }
   .proj .stages { font-size: var(--fs-md); gap: 4px; bottom: 9vh; }
   .proj .final { left: var(--gutter); right: var(--gutter); max-width: none; text-align: left; bottom: 2.5vh; font-size: 26px; }
 }
-}
+
+/* жирніший за 500 у Geologica не завантажено — без штучного bold */
+b, strong { font-weight: 500; }
 </style>
 <script>document.documentElement.classList.add('js');</script>
 </head>
