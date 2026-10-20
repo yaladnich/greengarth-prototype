@@ -333,11 +333,11 @@
     const poster = $('img', slot), silhouette = $('svg', slot); gsap.set(poster, {opacity: 0});
 
     let lay = null, grass = null;
-    const plate = $('.plate', hero);
+    const plate = $('.plate:not(.sr-only)', hero);
     function layout() {
       const vw = innerWidth, vh = innerHeight, gut = vw < 768 ? 24 : 48, hd = head.offsetHeight;
       const R = logoSvg.getBoundingClientRect(), sC = R.height / vb.height;
-      const band = (plate ? plate.getBoundingClientRect().top + scrollY - hero.offsetTop : vh * 0.6) - hd, pad = vw < 768 ? 12 : Math.min(32, band * 0.08);
+      const band = (plate ? plate.getBoundingClientRect().top + scrollY - hero.offsetTop : vh) - hd, pad = vw < 768 ? 12 : Math.min(32, band * 0.08);
       const Hs = Math.max(56, Math.min(vw < 768 ? Math.min(vh * 0.26, vw * 0.42) : Math.min(vh * 0.5, vw * 0.36), band - 2 * pad));
       const gs = Hs / G.h, gx = gut, gy = hd + Math.max(pad, (band - Hs) / 2);
       const cap = Math.max(...L.filter(l => l.row >= 0).map(l => l.b.height)), sS0 = (Hs * (vw < 768 ? 0.26 : 0.3)) / cap;

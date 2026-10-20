@@ -145,6 +145,9 @@ section.hero { background:
 .hero .in { position: relative; z-index: 2; min-height: 100vh; display: flex; flex-direction: column; justify-content: flex-end; padding: calc(var(--head) + 24px) var(--gutter) clamp(24px, 5vh, 56px); }
 /* «ЛАНДШАФТНОГО» при 96 px ≈ 812 px — плашка має вмістити його з полями */
 .hero .plate { width: min(100%, 940px); }
+/* плашку тимчасово знято з екрана: лишається лише H1 для пошуковиків і читачів екрана */
+.hero .plate.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: 0; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
+.hero .plate.sr-only > :not(h1) { display: none; }
 /* на телефоні плашка на всю ширину, як у «стовпах»: інакше «ЛАНДШАФТНОГО» не влазить */
 @media (max-width: 767px) { .hero .in { padding-inline: 0; } }
 .hero .lbl { color: var(--ink2); margin: 0 0 14px; }
