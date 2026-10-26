@@ -318,6 +318,56 @@
   const hero = $('.hero'), logoSvg = $('.head .logo svg');
   if (hero && logoSvg) heroLockup();
   else if (hero) hero.querySelector('.static-g')?.style.setProperty('visibility', 'visible');
+  if (hero) TilesBg(hero);
+
+  // ---------- тло першого екрана: плитка, під курсором плитки розступаються й проростає газон ----------
+  // Квадратна дрібна плитка з тонкими швами; деформація дуже сильна (стиск 0,88 + зсув від курсора),
+  // плитки швидко повертаються. Кольори лого (м'ята / смарагд). Малюється лише поки перший екран у кадрі.
+  function TilesBg(sec) {
+    const cv = document.createElement('canvas'); cv.className = 'tiles'; cv.setAttribute('aria-hidden', 'true');
+    sec.prepend(cv);
+    const ctx = cv.getContext('2d');
+    const C = {bg: [244, 250, 246], tile: [[226, 243, 233], [238, 249, 242]], seam: [196, 228, 211], grass: [[45, 163, 126], [185, 236, 205]]};
+    const SIZE = 24, GAP = 1, RAD = 170, SHRINK = 0.88, PUSH = 0.95 * SIZE, HEAL = 1.6;
+    let W = 0, H = 0, tiles = [], mouse = null, cur = null, last = performance.now(), on = false, raf = 0;
+    const rnd = (i, j) => { const x = Math.sin(i * 127.1 + j * 311.7) * 43758.5453; return x - Math.floor(x); };
+    const mix = (a, b, t) => a.map((v, i) => Math.round(v + (b[i] - v) * t));
+    const sm = t => t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t);
+    function build() {
+      const r = sec.getBoundingClientRect(), dpr = Math.min(1.5, devicePixelRatio || 1);
+      W = r.width; H = r.height; cv.width = W * dpr; cv.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      tiles = [];
+      for (let j = 0, y = 0; y < H + SIZE; y += SIZE, j++) for (let i = 0, x = 0; x < W + SIZE; x += SIZE, i++)
+        tiles.push({x, y, cx: x + SIZE / 2, cy: y + SIZE / 2, tone: rnd(j + 3, i + 7), ph: rnd(i, j), e: 0});
+    }
+    function frame(now) {
+      raf = 0;
+      const dt = Math.min(0.05, (now - last) / 1000); last = now;
+      if (mouse) cur = cur ? {x: cur.x + (mouse.x - cur.x) * Math.min(1, dt * 16), y: cur.y + (mouse.y - cur.y) * Math.min(1, dt * 16)} : {...mouse};
+      else cur = null;
+      ctx.fillStyle = `rgb(${C.seam})`; ctx.fillRect(0, 0, W, H);
+      const k0 = 1 - GAP / SIZE; let busy = false;
+      for (const p of tiles) {
+        const target = cur ? sm(1 - Math.hypot(p.cx - cur.x, p.cy - cur.y) / RAD) : 0;
+        p.e += target > p.e ? (target - p.e) * Math.min(1, dt * 5) : (target - p.e) * Math.min(1, dt * HEAL);
+        if (p.e < 0.002) p.e = 0; else busy = true;
+        const e = p.e, h = SIZE / 2;
+        if (e > 0.02) { ctx.fillStyle = `rgb(${mix(C.grass[0], C.grass[1], 0.3 + 0.5 * p.ph)})`; ctx.fillRect(p.x, p.y, SIZE, SIZE); }
+        const k = k0 * (1 - SHRINK * e);
+        let ox = 0, oy = 0;
+        if (cur && e > 0.01) { const dx = p.cx - cur.x, dy = p.cy - cur.y, L = Math.hypot(dx, dy) || 1, f = e * (1 - e * 0.35) * PUSH; ox = dx / L * f; oy = dy / L * f; }
+        ctx.fillStyle = `rgb(${mix(C.tile[0], C.tile[1], p.tone)})`;
+        ctx.fillRect(p.cx - h * k + ox, p.cy - h * k + oy, 2 * h * k, 2 * h * k);
+      }
+      if (on && (busy || mouse)) raf = requestAnimationFrame(frame);
+    }
+    const kick = () => { if (on && !raf) { last = performance.now(); raf = requestAnimationFrame(frame); } };
+    sec.addEventListener('pointermove', e => { const r = sec.getBoundingClientRect(); mouse = {x: e.clientX - r.left, y: e.clientY - r.top}; kick(); });
+    sec.addEventListener('pointerleave', () => { mouse = null; kick(); });
+    new IntersectionObserver(es => { on = es[0].isIntersecting; if (on) kick(); }, {threshold: 0}).observe(sec);
+    addEventListener('resize', () => { build(); on = true; kick(); });
+    build(); on = true; frame(performance.now());
+  }
 
   function heroLockup() {
     const vb = logoSvg.viewBox.baseVal, gi = $('image, [data-ribbon]', logoSvg), ribbon = gi.hasAttribute('data-ribbon');
