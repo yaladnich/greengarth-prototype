@@ -319,6 +319,27 @@
   if (hero && logoSvg) heroLockup();
   else if (hero) hero.querySelector('.static-g')?.style.setProperty('visibility', 'visible');
   if (hero) TilesBg(hero);
+  SiteTheme();
+
+  // ---------- перемикач темної теми: усі розділи стають темними, лого й плитка беруть темні кольори ----------
+  function SiteTheme() {
+    const btn = $('.head .theme');
+    const secs = $$('main section[data-theme], footer[data-theme], .hero[data-theme]');
+    secs.forEach(s => { s.dataset.themeOrig = s.dataset.theme; });
+    function set(dark) {
+      document.documentElement.classList.toggle('site-dark', dark);
+      secs.forEach(s => { s.dataset.theme = dark ? 'dark' : s.dataset.themeOrig; });
+      head.dataset.theme = dark ? 'dark' : (secs.find(s => s.getBoundingClientRect().bottom > head.offsetHeight)?.dataset.themeOrig || 'light');
+      $$('stop[data-d]').forEach(st => st.setAttribute('stop-color', dark ? st.dataset.d : st.dataset.l));
+      if (btn) { btn.setAttribute('aria-pressed', String(dark)); btn.setAttribute('aria-label', dark ? 'Світла тема' : 'Темна тема'); }
+      dispatchEvent(new CustomEvent('gg-theme', {detail: {dark}}));
+      try { localStorage.setItem('gg-site-theme', dark ? 'dark' : 'light'); } catch (e) {}
+    }
+    let dark = false;
+    try { dark = localStorage.getItem('gg-site-theme') === 'dark'; } catch (e) {}
+    btn?.addEventListener('click', () => { dark = !dark; set(dark); });
+    if (dark) set(true);
+  }
 
   // ---------- тло першого екрана: плитка, під курсором плитки розступаються й проростає газон ----------
   // Квадратна дрібна плитка з тонкими швами; деформація дуже сильна (стиск 0,88 + зсув від курсора),
@@ -327,8 +348,11 @@
     const cv = document.createElement('canvas'); cv.className = 'tiles'; cv.setAttribute('aria-hidden', 'true');
     sec.prepend(cv);
     const ctx = cv.getContext('2d');
-    const C = {bg: [244, 250, 246], tile: [[226, 243, 233], [238, 249, 242]], seam: [196, 228, 211], grass: [[45, 163, 126], [185, 236, 205]]};
-    const SIZE = 24, GAP = 1, RAD = 170, SHRINK = 0.88, PUSH = 0.95 * SIZE, HEAL = 1.6;
+    const PAL = {light: {bg: [244, 250, 246], tile: [[226, 243, 233], [238, 249, 242]], seam: [196, 228, 211], grass: [[45, 163, 126], [185, 236, 205]]},
+                 dark: {bg: [11, 26, 30], tile: [[19, 44, 50], [24, 54, 60]], seam: [8, 18, 21], grass: [[26, 79, 107], [45, 163, 126]]}};
+    let C = PAL.light;
+    addEventListener('gg-theme', e => { C = e.detail.dark ? PAL.dark : PAL.light; on = true; frame(performance.now()); });
+    const SIZE = 24, GAP = 1, RAD = 170, SHRINK = 0.88, PUSH = 0.95 * SIZE, HEAL = 14;   // HEAL: слід за курсором гасне за ~0,25 с
     let W = 0, H = 0, tiles = [], mouse = null, cur = null, last = performance.now(), on = false, raf = 0;
     const rnd = (i, j) => { const x = Math.sin(i * 127.1 + j * 311.7) * 43758.5453; return x - Math.floor(x); };
     const mix = (a, b, t) => a.map((v, i) => Math.round(v + (b[i] - v) * t));
@@ -394,7 +418,9 @@
       const R = logoSvg.getBoundingClientRect(), sC = R.height / vb.height;
       const band = (plate ? plate.getBoundingClientRect().top + scrollY - hero.offsetTop : vh) - hd, pad = vw < 768 ? 12 : Math.min(32, band * 0.08);
       const Hs = Math.max(56, Math.min(vw < 768 ? Math.min(vh * 0.26, vw * 0.42) : Math.min(vh * 0.5, vw * 0.36), band - 2 * pad));
-      const gs = Hs / G.h, gx = gut, gy = hd + Math.max(pad, (band - Hs) / 2);
+      let gs = Hs / G.h, gx = gut, gy = hd + Math.max(pad, (band - Hs) / 2);
+      // стрічкова G: лого цілим блоком (напис щільно біля знака), не ширше за екран
+      if (ribbon) { const full = (vb.x + vb.width - G.x) * gs, room = vw - 2 * gut; if (full > room) { gs *= room / full; gy = hd + Math.max(pad, (band - G.h * gs) / 2); } }
       const cap = Math.max(...L.filter(l => l.row >= 0).map(l => l.b.height)), sS0 = (Hs * (vw < 768 ? 0.26 : 0.3)) / cap;
       const x0 = gx + G.w * gs + vw * 0.04, plus = L.find(l => l.row < 0), pw = plus ? plus.b.width * sS0 : 0, x1 = vw - gut - pw * 1.6;
       // на вузькому екрані «розсунутий» напис не влазить: зменшуємо літери, щоб між ними лишався проміжок ≥ 12 % висоти
@@ -407,7 +433,8 @@
         for (const l of rl) { pos.set(l, {x, y}); x += l.b.width * sS + gap; }
       }
       if (plus) pos.set(plus, {x: vw - gut - plus.b.width * sS, y: gy + Hs * 0.43 + dy});
-      lay = {R, sC, sS, gs, gx, gy, pos, Gc: {x: R.left + (G.x - vb.x) * sC, y: R.top + (G.y - vb.y) * sC, s: sC}};
+      if (ribbon) for (const l of L) pos.set(l, {x: gx + (l.b.x - G.x) * gs, y: gy + (l.b.y - G.y) * gs});
+      lay = {R, sC, sS: ribbon ? gs : sS, gs, gx, gy, pos, Gc: {x: R.left + (G.x - vb.x) * sC, y: R.top + (G.y - vb.y) * sC, s: sC}};
       slot.style.width = G.w * gs + 'px'; slot.style.height = G.h * gs + 'px';
     }
     const lerp = (a, b, t) => a + (b - a) * t;
