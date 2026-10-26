@@ -320,7 +320,7 @@
   else if (hero) hero.querySelector('.static-g')?.style.setProperty('visibility', 'visible');
 
   function heroLockup() {
-    const vb = logoSvg.viewBox.baseVal, gi = $('image', logoSvg);
+    const vb = logoSvg.viewBox.baseVal, gi = $('image, [data-ribbon]', logoSvg), ribbon = gi.hasAttribute('data-ribbon');
     const G = {x: +gi.getAttribute('x'), y: +gi.getAttribute('y'), w: +gi.getAttribute('width'), h: +gi.getAttribute('height')};
     const src = $$('path[data-l]', logoSvg).map(p => ({p, b: p.getBBox(), row: +p.dataset.row}));
     const base = $('path[data-base]', logoSvg);
@@ -330,9 +330,10 @@
     const lcv = document.createElement('canvas'); lcv.className = 'lgrass'; ov.appendChild(lcv);
     const LT = new Float32Array(L.length * 3);          // перетворення кожної літери: масштаб, зсув x, y (px)
     const slot = document.createElement('div'); slot.className = 'gslot';
-    slot.innerHTML = `<svg viewBox="${G.x} ${G.y} ${G.w} ${G.h}" preserveAspectRatio="none"><path d="${base.getAttribute('d')}"/></svg><img src="${gi.getAttribute('href')}" alt=""><canvas></canvas>`;
+    slot.innerHTML = ribbon ? `<svg viewBox="${G.x} ${G.y} ${G.w} ${G.h}">${gi.outerHTML}</svg>` : `<svg viewBox="${G.x} ${G.y} ${G.w} ${G.h}" preserveAspectRatio="none"><path d="${base.getAttribute('d')}"/></svg><img src="${gi.getAttribute('href')}" alt=""><canvas></canvas>`;
+    if (ribbon) hero.querySelector('.static-g')?.remove();
     ov.appendChild(slot); document.body.appendChild(ov);
-    const poster = $('img', slot), silhouette = $('svg', slot); gsap.set(poster, {opacity: 0});
+    const poster = $('img', slot), silhouette = $('svg', slot); if (poster) gsap.set(poster, {opacity: 0});
 
     let lay = null, grass = null, lgrass = null, lgLive = false;
     const plate = $('.plate:not(.sr-only)', hero);
@@ -392,9 +393,10 @@
     if (intro) {
       gsap.from(L.map(l => l.c), {opacity: 0, y: 60, filter: 'blur(10px)', duration: 0.9, stagger: 0.06, ease: 'power3.out'});
       gsap.from(silhouette, {opacity: 0, scale: 0.92, transformOrigin: '50% 100%', duration: 0.8, ease: 'power3.out'});
-    } else gsap.set(poster, {opacity: 1});
+    } else if (poster) gsap.set(poster, {opacity: 1});
     const t0 = performance.now();
     const startGrass = () => {
+      if (ribbon) return;
       if (!window.WebGL2RenderingContext || typeof earcut === 'undefined') { gsap.to(poster, {opacity: 1, duration: 0.6}); return; }
       const fallback = setTimeout(() => gsap.to(poster, {opacity: 1, duration: 0.6}), 2500);
       fetch('grass.json').then(r => r.json()).then(D => {
