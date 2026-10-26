@@ -326,6 +326,8 @@
     const base = $('path[data-base]', logoSvg);
     const ov = document.createElement('div'); ov.className = 'lockup'; ov.setAttribute('aria-hidden', 'true');
     const svg = document.createElementNS(NS, 'svg'); ov.appendChild(svg);
+    // переливи літер (конюшина) живуть у defs лого шапки — накладці потрібна копія
+    $$('defs', logoSvg).forEach(d => svg.appendChild(d.cloneNode(true)));
     const L = src.map(s => { const c = s.p.cloneNode(true); svg.appendChild(c); return {...s, c}; });
     const lcv = document.createElement('canvas'); lcv.className = 'lgrass'; ov.appendChild(lcv);
     const LT = new Float32Array(L.length * 3);          // перетворення кожної літери: масштаб, зсув x, y (px)
